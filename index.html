@@ -85,6 +85,17 @@
     .purchase-dialog p { color: #526071; margin-bottom: 20px; }
     .purchase-dialog button { padding: 11px 18px; border: 0; border-radius: 9px; background: #123b72; color: white; font: inherit; font-weight: 700; cursor: pointer; }
 
+    .nav-auth { padding: 8px 13px; border: 1px solid #fff; border-radius: 9px; background: transparent; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+    .dialog-field { display: block; margin: 12px 0; }
+    .dialog-field label { display: block; font-size: 14px; font-weight: 700; margin-bottom: 5px; }
+    .dialog-field input, .dialog-field select { width: 100%; padding: 12px; border: 1px solid #d5deea; border-radius: 9px; font: inherit; }
+    .dialog-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+    .dialog-actions button { padding: 11px 15px; border: 0; border-radius: 9px; background: #123b72; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+    .dialog-actions button:disabled { opacity: .6; cursor: wait; }
+    .dialog-message { margin-top: 12px; padding: 10px; background: #eef6f8; border-radius: 8px; color: #334155; font-size: 14px; overflow-wrap: anywhere; }
+    .account-panel { margin-top: 22px; padding: 20px; background: #f7f9fc; border: 1px solid #e7ebf1; border-radius: 14px; }
+    .account-panel button { padding: 10px 14px; border: 0; border-radius: 8px; background: #123b72; color: white; font: inherit; font-weight: 700; cursor: pointer; }
+
     @media (max-width: 850px) {
       nav { flex-direction: column; align-items: flex-start; }
       nav .nav-links { gap: 10px 14px; }
@@ -113,6 +124,7 @@
       <a href="#bibliotheque">Bibliothèque</a>
       <a href="#boutique">Boutique eBooks</a>
       <a href="#espace">Mon espace</a>
+      <button type="button" id="authOpen" class="nav-auth">Se connecter</button>
     </div>
   </nav>
 </header>
@@ -164,7 +176,7 @@
       <div class="store-toolbar"><label for="ebookSearch" style="position:absolute;left:-9999px;">Rechercher un eBook</label><input id="ebookSearch" class="store-search" type="search" placeholder="Rechercher un eBook…" autocomplete="off"></div>
       <div id="storeStatus" class="store-status" role="status" aria-live="polite">Chargement du catalogue…</div>
       <div id="productGrid" class="product-grid" aria-live="polite"></div>
-      <p style="margin:22px auto 0;max-width:760px;text-align:center;color:#687386;font-size:13px;">Le catalogue affiche les eBooks publiés dans DORA DIGITAL ACADEMY. Le paiement sécurisé et le téléchargement après achat ne sont pas encore activés.</p>
+      <p style="margin:22px auto 0;max-width:760px;text-align:center;color:#687386;font-size:13px;">Le catalogue affiche les eBooks publiés. Le paiement est en phase de test : l’accès au fichier reste protégé et dépend de la confirmation serveur.</p>
     </div>
   </section>
 
@@ -177,7 +189,15 @@
         <div class="dashboard-item"><span>🏆</span><strong>Mes certificats</strong><p>Retrouvez vos réussites.</p></div>
         <div class="dashboard-item"><span>👤</span><strong>Mon profil</strong><p>Préparez votre espace personnel.</p></div>
       </div>
-      <p style="text-align:center;margin-top:25px;color:#687386;">L'accès aux fonctionnalités personnelles nécessitera une connexion et leur intégration technique.</p>
+      <div class="account-panel">
+        <h3>Votre compte et vos achats</h3>
+        <p id="accountStatus" role="status" aria-live="polite">Connectez-vous pour consulter vos achats et télécharger les eBooks acquis.</p>
+        <div class="dialog-actions">
+          <button type="button" id="refreshAccount">Actualiser mes achats</button>
+          <button type="button" id="signOutBtn" hidden>Se déconnecter</button>
+        </div>
+        <div id="purchaseList" style="margin-top:14px;"></div>
+      </div>
     </div>
   </section>
 
@@ -185,11 +205,28 @@
 </main>
 <footer><p>© 2026 <strong>DORA DIGITAL ACADEMY</strong>. Tous droits réservés.</p><p>Apprenez. Créez. Développez. Réussissez.</p></footer>
 
+<dialog id="authDialog" class="purchase-dialog" aria-labelledby="authTitle">
+  <div class="purchase-dialog-content">
+    <h3 id="authTitle">Compte apprenant</h3>
+    <p>Connectez-vous ou créez un compte pour acheter et retrouver vos eBooks.</p>
+    <form id="authForm">
+      <div class="dialog-field"><label for="authEmail">Adresse e-mail</label><input id="authEmail" type="email" autocomplete="email" required></div>
+      <div class="dialog-field"><label for="authPassword">Mot de passe (8 caractères minimum)</label><input id="authPassword" type="password" minlength="8" autocomplete="current-password" required></div>
+      <div class="dialog-actions"><button type="submit" id="signInBtn">Se connecter</button><button type="button" id="signUpBtn">Créer un compte</button><button type="button" id="closeAuth">Fermer</button></div>
+    </form>
+    <p id="authMessage" class="dialog-message" role="status" aria-live="polite"></p>
+  </div>
+</dialog>
 <dialog id="purchaseInfo" class="purchase-dialog" aria-labelledby="purchaseInfoTitle">
   <div class="purchase-dialog-content">
-    <h3 id="purchaseInfoTitle">Achat bientôt disponible</h3>
-    <p>Le catalogue est consultable. Le paiement sécurisé est encore en préparation : aucun paiement ni aucune commande n'ont été effectués par ce bouton.</p>
-    <button type="button" id="closePurchaseInfo">Fermer</button>
+    <h3 id="purchaseInfoTitle">Acheter cet eBook</h3>
+    <p id="purchaseProductName">Choisissez votre moyen de paiement.</p>
+    <form id="purchaseForm">
+      <div class="dialog-field"><label for="paymentProvider">Moyen de paiement</label><select id="paymentProvider" required><option value="orange">Orange Money</option><option value="airtel">Airtel Money</option></select></div>
+      <div class="dialog-field"><label for="paymentPhone">Téléphone tchadien (+235)</label><input id="paymentPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+235XXXXXXXX" required></div>
+      <div class="dialog-actions"><button type="submit" id="startPaymentBtn">Lancer le paiement test</button><button type="button" id="closePurchaseInfo">Annuler</button></div>
+    </form>
+    <p id="paymentMessage" class="dialog-message" role="status" aria-live="polite">Le paiement est en mode test. N'effectuez aucun paiement réel.</p>
   </div>
 </dialog>
 
@@ -198,96 +235,104 @@
 (function () {
   "use strict";
   const SUPABASE_URL = "https://wtbxjqamwitwogxdrkwd.supabase.co";
-  // Une clé publishable peut être utilisée dans le navigateur ; ne jamais y placer une clé secret/service_role.
   const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_A0nQrTR74bt6_FV3BbaFLg_QMXRdQZ5";
   const statusEl = document.getElementById("storeStatus");
   const gridEl = document.getElementById("productGrid");
   const searchEl = document.getElementById("ebookSearch");
+  const authDialog = document.getElementById("authDialog");
   const purchaseDialog = document.getElementById("purchaseInfo");
-  const closePurchaseInfo = document.getElementById("closePurchaseInfo");
+  const authOpen = document.getElementById("authOpen");
+  const authForm = document.getElementById("authForm");
+  const authMessage = document.getElementById("authMessage");
+  const purchaseForm = document.getElementById("purchaseForm");
+  const paymentMessage = document.getElementById("paymentMessage");
+  const purchaseProductName = document.getElementById("purchaseProductName");
+  const accountStatus = document.getElementById("accountStatus");
+  const purchaseList = document.getElementById("purchaseList");
+  const signOutBtn = document.getElementById("signOutBtn");
   let products = [];
+  let selectedProduct = null;
+  let pendingProduct = null;
+  let client = null;
 
   function escapeHtml(value) {
-    return String(value == null ? "" : value).replace(/[&<>"']/g, function (character) {
-      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[character];
+    return String(value == null ? "" : value).replace(/[&<>"']/g, function (ch) {
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;", "'":"&#39;"}[ch];
     });
   }
-
   function formatPrice(product) {
-    const amount = product.sale_price != null ? product.sale_price : product.price;
-    const numericAmount = Number(amount);
-    if (!Number.isFinite(numericAmount)) return "Prix sur demande";
-    const formatted = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(numericAmount);
-    const currency = product.currency === "XAF" ? "FCFA" : (product.currency || "");
-    return formatted + (currency ? " " + escapeHtml(currency) : "");
+    const amount = Number(product.sale_price != null ? product.sale_price : product.price);
+    if (!Number.isFinite(amount)) return "Prix sur demande";
+    return new Intl.NumberFormat("fr-FR", {maximumFractionDigits:0}).format(amount) + " " + (product.currency === "XAF" ? "FCFA" : escapeHtml(product.currency || ""));
   }
-
   function renderProducts(list) {
     if (!list.length) {
-      gridEl.innerHTML = "";
-      statusEl.hidden = false;
+      gridEl.innerHTML = ""; statusEl.hidden = false;
       statusEl.textContent = products.length ? "Aucun eBook ne correspond à votre recherche." : "Aucun eBook publié pour le moment. Revenez bientôt.";
       return;
     }
     statusEl.hidden = true;
-    gridEl.innerHTML = list.map(function (product) {
-      const imageUrl = typeof product.cover_url === "string" && (product.cover_url.startsWith("https://") || product.cover_url.startsWith("/")) ? product.cover_url : "";
-      const cover = imageUrl
-        ? '<img src="' + escapeHtml(imageUrl) + '" alt="Couverture de ' + escapeHtml(product.title) + '" loading="lazy">'
-        : '<div class="product-art-label"><small>DORA DIGITAL ACADEMY</small>' + escapeHtml(product.title) + '</div>';
-      const description = product.short_description || product.description || "Ressource numérique pour apprendre et progresser.";
-      return '<article class="product-card">' +
-        '<div class="product-art">' + cover + '</div>' +
-        '<div class="product-copy">' +
-          '<span class="product-tag">Livre numérique</span>' +
-          '<h3>' + escapeHtml(product.title) + '</h3>' +
-          '<p>' + escapeHtml(description) + '</p>' +
-          '<div class="product-bottom"><div class="product-price">' + formatPrice(product) + '</div>' +
-          '<button class="product-buy" type="button" data-buy="' + escapeHtml(product.id) + '">Acheter cet eBook</button></div>' +
-        '</div></article>';
+    gridEl.innerHTML = list.map(function (p) {
+      const imageUrl = typeof p.cover_url === "string" && (p.cover_url.startsWith("https://") || p.cover_url.startsWith("/")) ? p.cover_url : "";
+      const cover = imageUrl ? '<img src="'+escapeHtml(imageUrl)+'" alt="Couverture de '+escapeHtml(p.title)+'" loading="lazy">' : '<div class="product-art-label"><small>DORA DIGITAL ACADEMY</small>'+escapeHtml(p.title)+'</div>';
+      return '<article class="product-card"><div class="product-art">'+cover+'</div><div class="product-copy"><span class="product-tag">Livre numérique</span><h3>'+escapeHtml(p.title)+'</h3><p>'+escapeHtml(p.short_description || p.description || "Ressource numérique pour apprendre et progresser.")+'</p><div class="product-bottom"><div class="product-price">'+formatPrice(p)+'</div><button class="product-buy" type="button" data-buy="'+escapeHtml(p.id)+'">Acheter cet eBook</button></div></div></article>';
     }).join("");
   }
-
-  async function loadProducts() {
-    if (!window.supabase || typeof window.supabase.createClient !== "function") {
-      statusEl.textContent = "Le catalogue n'a pas pu se connecter. Vérifiez la connexion Internet puis actualisez la page.";
-      return;
-    }
-    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
-    const { data, error } = await client.from("products")
-      .select("id,title,slug,short_description,description,cover_url,price,sale_price,currency,status,created_at")
-      .eq("status", "published")
-      .order("created_at", { ascending: false });
-    if (error) {
-      console.error("Erreur de chargement du catalogue :", error.message);
-      statusEl.textContent = "Le catalogue est momentanément indisponible. Réessayez plus tard.";
-      return;
-    }
-    products = Array.isArray(data) ? data : [];
-    renderProducts(products);
+  function setAuthMessage(t){authMessage.textContent=t;}
+  function setPaymentMessage(t){paymentMessage.textContent=t;}
+  async function getSession(){const {data,error}=await client.auth.getSession(); if(error) throw error; return data.session;}
+  async function showPurchase(product){selectedProduct=product;purchaseProductName.textContent=product.title+" — "+formatPrice(product);setPaymentMessage("Mode test uniquement. Aucun paiement réel ne doit être débité.");purchaseDialog.showModal();}
+  async function loadProducts(){
+    if(!window.supabase || typeof window.supabase.createClient!=="function"){statusEl.textContent="Catalogue indisponible : vérifiez votre connexion puis actualisez.";return;}
+    client=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+    const {data,error}=await client.from("products").select("id,title,slug,short_description,description,cover_url,price,sale_price,currency,status,created_at").eq("status","published").order("created_at",{ascending:false});
+    if(error){console.error("Catalogue:",error.message);statusEl.textContent="Le catalogue est momentanément indisponible. Réessayez plus tard.";return;}
+    products=Array.isArray(data)?data:[];renderProducts(products);
+    const session=await getSession().catch(()=>null);updateAuthUI(session);
   }
-
-  searchEl.addEventListener("input", function () {
-    const term = searchEl.value.trim().toLocaleLowerCase("fr");
-    renderProducts(products.filter(function (product) {
-      return [product.title, product.short_description, product.description].some(function (value) {
-        return String(value || "").toLocaleLowerCase("fr").includes(term);
-      });
-    }));
+  function updateAuthUI(session){authOpen.textContent=session?"Mon compte":"Se connecter";signOutBtn.hidden=!session;if(session){accountStatus.textContent="Connecté : "+(session.user.email||"compte apprenant")+". Vous pouvez actualiser vos achats.";}else{accountStatus.textContent="Connectez-vous pour consulter vos achats et télécharger les eBooks acquis.";purchaseList.innerHTML="";}}
+  async function refreshPurchases(){
+    const session=await getSession().catch(()=>null);
+    if(!session){accountStatus.textContent="Connectez-vous pour consulter vos achats.";authDialog.showModal();setAuthMessage("Connectez-vous pour retrouver vos achats.");return;}
+    accountStatus.textContent="Recherche de vos achats confirmés…";purchaseList.innerHTML="";
+    // Le serveur reste l'autorité pour l'accès aux fichiers. La fonction secure-download refuse tout achat non confirmé.
+    const ownedProducts=[];
+    for(const p of products){
+      const {data,error}=await client.functions.invoke("secure-download",{body:{product_id:p.id}});
+      if(!error && data && data.ok && data.url) ownedProducts.push({product:p,url:data.url});
+    }
+    if(!ownedProducts.length){accountStatus.textContent="Aucun téléchargement disponible pour le moment. Un eBook apparaît ici après confirmation du paiement.";return;}
+    accountStatus.textContent="Vos téléchargements autorisés :";
+    purchaseList.innerHTML=ownedProducts.map(x=>'<p style="margin:10px 0;"><strong>'+escapeHtml(x.product.title)+'</strong> — <a href="'+escapeHtml(x.url)+'" target="_blank" rel="noopener">Télécharger le PDF (lien temporaire)</a></p>').join("");
+  }
+  authOpen.addEventListener("click",async function(){const session=await getSession().catch(()=>null);if(session){authDialog.showModal();setAuthMessage("Vous êtes connecté avec "+(session.user.email||"votre compte")+".");}else{authDialog.showModal();setAuthMessage("Connectez-vous ou créez un compte pour acheter.");}});
+  document.getElementById("closeAuth").addEventListener("click",()=>authDialog.close());
+  authForm.addEventListener("submit",async function(event){
+    event.preventDefault();const email=document.getElementById("authEmail").value.trim();const password=document.getElementById("authPassword").value;const btn=document.getElementById("signInBtn");btn.disabled=true;setAuthMessage("Connexion en cours…");
+    const {data,error}=await client.auth.signInWithPassword({email,password});btn.disabled=false;
+    if(error){setAuthMessage("Connexion impossible : "+error.message);return;}updateAuthUI(data.session);authDialog.close();if(pendingProduct){const p=pendingProduct;pendingProduct=null;showPurchase(p);}
   });
-
-  gridEl.addEventListener("click", function (event) {
-    const button = event.target.closest("[data-buy]");
-    if (!button) return;
-    if (purchaseDialog && typeof purchaseDialog.showModal === "function") purchaseDialog.showModal();
-    else window.alert("Le paiement sécurisé sera activé dans une prochaine étape. Aucun paiement n'a été effectué.");
+  document.getElementById("signUpBtn").addEventListener("click",async function(){
+    const email=document.getElementById("authEmail").value.trim();const password=document.getElementById("authPassword").value;
+    if(!email||password.length<8){setAuthMessage("Saisissez un e-mail valide et un mot de passe d'au moins 8 caractères.");return;}
+    const btn=document.getElementById("signUpBtn");btn.disabled=true;setAuthMessage("Création du compte…");const {data,error}=await client.auth.signUp({email,password});btn.disabled=false;
+    if(error){setAuthMessage("Inscription impossible : "+error.message);return;}if(!data.session){setAuthMessage("Compte créé. Vérifiez votre boîte e-mail pour confirmer l'inscription, puis connectez-vous.");return;}
+    updateAuthUI(data.session);authDialog.close();if(pendingProduct){const p=pendingProduct;pendingProduct=null;showPurchase(p);}
   });
-
-  closePurchaseInfo.addEventListener("click", function () { purchaseDialog.close(); });
-  loadProducts().catch(function (error) {
-    console.error("Erreur inattendue du catalogue :", error);
-    statusEl.textContent = "Une erreur inattendue empêche le chargement du catalogue.";
+  clientAuthWait();
+  function clientAuthWait(){ /* La session est synchronisée après initialisation du client Supabase. */ }
+  gridEl.addEventListener("click",async function(event){const button=event.target.closest("[data-buy]");if(!button)return;const p=products.find(x=>x.id===button.getAttribute("data-buy"));if(!p)return;const session=await getSession().catch(()=>null);if(!session){pendingProduct=p;authDialog.showModal();setAuthMessage("Connectez-vous ou créez un compte pour poursuivre l'achat.");return;}showPurchase(p);});
+  purchaseForm.addEventListener("submit",async function(event){
+    event.preventDefault();if(!selectedProduct)return;const session=await getSession().catch(()=>null);if(!session){purchaseDialog.close();pendingProduct=selectedProduct;authDialog.showModal();setAuthMessage("Votre session a expiré. Reconnectez-vous.");return;}
+    const phone=document.getElementById("paymentPhone").value.trim();const digits=phone.replace(/[\s()+.-]/g,"");if(!/^235[0-9]{8}$/.test(digits)){setPaymentMessage("Saisissez un numéro tchadien valide au format +235XXXXXXXX.");return;}
+    const btn=document.getElementById("startPaymentBtn");btn.disabled=true;setPaymentMessage("Demande de paiement test en cours…");
+    try{const {data,error}=await client.functions.invoke("create-payment",{body:{product_id:selectedProduct.id,provider:document.getElementById("paymentProvider").value,phone:phone}});if(error)throw error;if(!data||!data.ok)throw new Error(data?.error||"La demande de paiement a été refusée.");setPaymentMessage("Demande créée : "+data.order_number+". Statut : "+data.status+". Attendez la confirmation PayCentral; l'accès au fichier reste bloqué jusque-là.");if(data.checkout_url&&/^https:\/\//.test(data.checkout_url)){setPaymentMessage("Ouverture de la page de paiement de test…");window.location.assign(data.checkout_url);}}
+    catch(error){console.error("Paiement test:",error);setPaymentMessage(error?.message||"Impossible de lancer le paiement. Vérifiez la configuration serveur.");}finally{btn.disabled=false;}
   });
+  document.getElementById("closePurchaseInfo").addEventListener("click",()=>purchaseDialog.close());
+  document.getElementById("refreshAccount").addEventListener("click",()=>refreshPurchases().catch(e=>{console.error(e);accountStatus.textContent="Impossible de charger vos achats. Réessayez plus tard.";}));
+  signOutBtn.addEventListener("click",async()=>{const {error}=await client.auth.signOut();if(error){accountStatus.textContent="Déconnexion impossible. Réessayez.";return;}updateAuthUI(null);authDialog.close();});
+  loadProducts().then(function(){if(client){client.auth.onAuthStateChange((_event,session)=>updateAuthUI(session));}}).catch(function(error){console.error("Erreur boutique:",error);statusEl.textContent="Une erreur inattendue empêche le chargement du catalogue.";});
 })();
 </script>
 </body>
