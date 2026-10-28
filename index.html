@@ -3,549 +3,292 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <title>DORA DIGITAL ACADEMY</title>
-
-  <meta name="description"
-        content="DORA DIGITAL ACADEMY — Apprenez. Créez. Développez. Réussissez.">
-
+  <meta name="description" content="DORA DIGITAL ACADEMY — Apprenez. Créez. Développez. Réussissez.">
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; scroll-padding-top: 100px; }
+    body { font-family: Arial, Helvetica, sans-serif; background: #f5f7fb; color: #172033; line-height: 1.6; }
+    header { background: linear-gradient(135deg, #123b72, #176b87); color: white; padding: 18px 6%; position: sticky; top: 0; z-index: 1000; }
+    nav { max-width: 1200px; margin: auto; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+    .logo { font-size: 22px; font-weight: 800; letter-spacing: .5px; }
+    nav .nav-links { display: flex; flex-wrap: wrap; gap: 14px; }
+    nav a { color: white; text-decoration: none; font-size: 14px; }
+    nav a:hover { text-decoration: underline; }
+    .hero { background: linear-gradient(135deg, #eaf6ff, #ffffff); padding: 80px 6%; }
+    .hero-content { max-width: 1200px; margin: auto; display: grid; grid-template-columns: 1.2fr .8fr; gap: 50px; align-items: center; }
+    .badge { display: inline-block; background: #dff4eb; color: #08764e; padding: 8px 14px; border-radius: 30px; font-size: 13px; font-weight: bold; margin-bottom: 20px; }
+    h1 { font-size: clamp(38px, 6vw, 68px); line-height: 1.05; margin-bottom: 22px; color: #123b72; }
+    .hero p { font-size: 19px; color: #526071; max-width: 650px; margin-bottom: 30px; }
+    .buttons { display: flex; gap: 15px; flex-wrap: wrap; }
+    .btn { display: inline-block; padding: 14px 24px; border-radius: 10px; text-decoration: none; font-weight: bold; cursor: pointer; border: none; }
+    .btn-primary { background: #123b72; color: white; }
+    .btn-secondary { background: white; color: #123b72; border: 1px solid #d5deea; }
+    .hero-card { background: white; padding: 30px; border-radius: 24px; box-shadow: 0 20px 60px rgba(18,59,114,.12); }
+    .hero-card h3 { color: #123b72; margin-bottom: 15px; }
+    .stat { padding: 15px 0; border-bottom: 1px solid #edf0f5; }
+    .stat:last-child { border-bottom: none; }
+    .stat strong { display: block; font-size: 26px; color: #176b87; }
+    section { padding: 70px 6%; }
+    .container { max-width: 1200px; margin: auto; }
+    .section-title { text-align: center; margin-bottom: 32px; }
+    .section-title h2 { color: #123b72; font-size: 36px; margin-bottom: 10px; }
+    .section-title p { color: #687386; }
+    .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+    .card { background: white; padding: 28px; border-radius: 18px; box-shadow: 0 8px 30px rgba(20,35,60,.07); transition: .2s; }
+    .card:hover { transform: translateY(-5px); }
+    .icon { width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; background: #eaf6ff; border-radius: 14px; font-size: 25px; margin-bottom: 18px; }
+    .card h3 { color: #123b72; margin-bottom: 10px; }
+    .card p { color: #697586; font-size: 15px; }
+    .library { background: #eef6f8; }
+    .ebook { display: grid; grid-template-columns: 1fr 2fr; gap: 30px; align-items: center; }
+    .ebook-cover { min-height: 300px; border-radius: 20px; padding: 30px; background: linear-gradient(145deg, #123b72, #176b87); color: white; display: flex; flex-direction: column; justify-content: center; text-align: center; }
+    .ebook-cover strong { font-size: 42px; margin-bottom: 15px; }
+    .ebook-info h2 { color: #123b72; margin-bottom: 15px; font-size: 32px; }
+    .ebook-info p { color: #596579; margin-bottom: 20px; }
+    .dashboard { background: #ffffff; }
+    .dashboard-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+    .dashboard-item { background: #f7f9fc; border: 1px solid #e7ebf1; padding: 25px; border-radius: 16px; text-align: center; }
+    .dashboard-item span { font-size: 30px; display: block; margin-bottom: 10px; }
+    .dashboard-item strong { display: block; color: #123b72; }
+    .cta { background: linear-gradient(135deg, #123b72, #176b87); color: white; text-align: center; }
+    .cta h2 { font-size: 38px; margin-bottom: 15px; }
+    .cta p { max-width: 650px; margin: 0 auto 25px; opacity: .9; }
+    .cta .btn { background: white; color: #123b72; }
+    footer { background: #0c203d; color: #cbd5e1; padding: 35px 6%; text-align: center; }
+    footer strong { color: white; }
 
-    body {
-      font-family: Arial, Helvetica, sans-serif;
-      background: #f5f7fb;
-      color: #172033;
-      line-height: 1.6;
-    }
-
-    header {
-      background: linear-gradient(135deg, #123b72, #176b87);
-      color: white;
-      padding: 18px 6%;
-      position: sticky;
-      top: 0;
-      z-index: 1000;
-    }
-
-    nav {
-      max-width: 1200px;
-      margin: auto;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 20px;
-    }
-
-    .logo {
-      font-size: 22px;
-      font-weight: 800;
-      letter-spacing: .5px;
-    }
-
-    nav a {
-      color: white;
-      text-decoration: none;
-      margin-left: 18px;
-      font-size: 14px;
-    }
-
-    .hero {
-      background: linear-gradient(135deg, #eaf6ff, #ffffff);
-      padding: 80px 6%;
-    }
-
-    .hero-content {
-      max-width: 1200px;
-      margin: auto;
-      display: grid;
-      grid-template-columns: 1.2fr .8fr;
-      gap: 50px;
-      align-items: center;
-    }
-
-    .badge {
-      display: inline-block;
-      background: #dff4eb;
-      color: #08764e;
-      padding: 8px 14px;
-      border-radius: 30px;
-      font-size: 13px;
-      font-weight: bold;
-      margin-bottom: 20px;
-    }
-
-    h1 {
-      font-size: clamp(38px, 6vw, 68px);
-      line-height: 1.05;
-      margin-bottom: 22px;
-      color: #123b72;
-    }
-
-    .hero p {
-      font-size: 19px;
-      color: #526071;
-      max-width: 650px;
-      margin-bottom: 30px;
-    }
-
-    .buttons {
-      display: flex;
-      gap: 15px;
-      flex-wrap: wrap;
-    }
-
-    .btn {
-      display: inline-block;
-      padding: 14px 24px;
-      border-radius: 10px;
-      text-decoration: none;
-      font-weight: bold;
-      cursor: pointer;
-      border: none;
-    }
-
-    .btn-primary {
-      background: #123b72;
-      color: white;
-    }
-
-    .btn-secondary {
-      background: white;
-      color: #123b72;
-      border: 1px solid #d5deea;
-    }
-
-    .hero-card {
-      background: white;
-      padding: 30px;
-      border-radius: 24px;
-      box-shadow: 0 20px 60px rgba(18,59,114,.12);
-    }
-
-    .hero-card h3 {
-      color: #123b72;
-      margin-bottom: 15px;
-    }
-
-    .stat {
-      padding: 15px 0;
-      border-bottom: 1px solid #edf0f5;
-    }
-
-    .stat:last-child {
-      border-bottom: none;
-    }
-
-    .stat strong {
-      display: block;
-      font-size: 26px;
-      color: #176b87;
-    }
-
-    section {
-      padding: 70px 6%;
-    }
-
-    .container {
-      max-width: 1200px;
-      margin: auto;
-    }
-
-    .section-title {
-      text-align: center;
-      margin-bottom: 45px;
-    }
-
-    .section-title h2 {
-      color: #123b72;
-      font-size: 36px;
-      margin-bottom: 10px;
-    }
-
-    .section-title p {
-      color: #687386;
-    }
-
-    .features {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 22px;
-    }
-
-    .card {
-      background: white;
-      padding: 28px;
-      border-radius: 18px;
-      box-shadow: 0 8px 30px rgba(20,35,60,.07);
-      transition: .2s;
-    }
-
-    .card:hover {
-      transform: translateY(-5px);
-    }
-
-    .icon {
-      width: 52px;
-      height: 52px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #eaf6ff;
-      border-radius: 14px;
-      font-size: 25px;
-      margin-bottom: 18px;
-    }
-
-    .card h3 {
-      color: #123b72;
-      margin-bottom: 10px;
-    }
-
-    .card p {
-      color: #697586;
-      font-size: 15px;
-    }
-
-    .library {
-      background: #eef6f8;
-    }
-
-    .ebook {
-      display: grid;
-      grid-template-columns: 1fr 2fr;
-      gap: 30px;
-      align-items: center;
-    }
-
-    .ebook-cover {
-      min-height: 300px;
-      border-radius: 20px;
-      padding: 30px;
-      background: linear-gradient(145deg, #123b72, #176b87);
-      color: white;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      text-align: center;
-    }
-
-    .ebook-cover strong {
-      font-size: 42px;
-      margin-bottom: 15px;
-    }
-
-    .ebook-info h2 {
-      color: #123b72;
-      margin-bottom: 15px;
-      font-size: 32px;
-    }
-
-    .ebook-info p {
-      color: #596579;
-      margin-bottom: 20px;
-    }
-
-    .dashboard {
-      background: #ffffff;
-    }
-
-    .dashboard-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 18px;
-    }
-
-    .dashboard-item {
-      background: #f7f9fc;
-      border: 1px solid #e7ebf1;
-      padding: 25px;
-      border-radius: 16px;
-      text-align: center;
-    }
-
-    .dashboard-item span {
-      font-size: 30px;
-      display: block;
-      margin-bottom: 10px;
-    }
-
-    .dashboard-item strong {
-      display: block;
-      color: #123b72;
-    }
-
-    .cta {
-      background: linear-gradient(135deg, #123b72, #176b87);
-      color: white;
-      text-align: center;
-    }
-
-    .cta h2 {
-      font-size: 38px;
-      margin-bottom: 15px;
-    }
-
-    .cta p {
-      max-width: 650px;
-      margin: 0 auto 25px;
-      opacity: .9;
-    }
-
-    .cta .btn {
-      background: white;
-      color: #123b72;
-    }
-
-    footer {
-      background: #0c203d;
-      color: #cbd5e1;
-      padding: 35px 6%;
-      text-align: center;
-    }
-
-    footer strong {
-      color: white;
-    }
+    /* Boutique d'eBooks */
+    .store-section { background: #f5f8fc; }
+    .store-toolbar { max-width: 760px; margin: 0 auto 26px; }
+    .store-search { width: 100%; padding: 14px 16px; border: 1px solid #d5deea; border-radius: 12px; background: white; color: #172033; font: inherit; outline: none; }
+    .store-search:focus { border-color: #176b87; box-shadow: 0 0 0 3px rgba(23,107,135,.12); }
+    .product-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
+    .product-card { overflow: hidden; background: white; border: 1px solid #e6ebf2; border-radius: 20px; box-shadow: 0 8px 28px rgba(20,35,60,.06); display: flex; flex-direction: column; min-width: 0; }
+    .product-art { height: 210px; padding: 22px; display: flex; align-items: center; justify-content: center; background: linear-gradient(145deg, #123b72, #176b87); color: white; text-align: center; }
+    .product-art img { width: 100%; height: 100%; object-fit: contain; border-radius: 10px; }
+    .product-art-label { max-width: 250px; font-weight: 800; font-size: 23px; line-height: 1.25; }
+    .product-art-label small { display: block; margin-bottom: 10px; font-size: 11px; letter-spacing: 2px; opacity: .8; }
+    .product-copy { padding: 22px; display: flex; flex-direction: column; align-items: flex-start; flex: 1; }
+    .product-tag { display: inline-block; border-radius: 30px; padding: 5px 10px; margin-bottom: 12px; color: #08764e; background: #dff4eb; font-size: 12px; font-weight: 700; }
+    .product-copy h3 { color: #123b72; font-size: 20px; line-height: 1.35; margin-bottom: 10px; }
+    .product-copy p { color: #697586; font-size: 14px; margin-bottom: 18px; }
+    .product-bottom { width: 100%; margin-top: auto; display: flex; flex-direction: column; gap: 14px; }
+    .product-price { color: #123b72; font-size: 23px; font-weight: 800; }
+    .product-buy { width: 100%; padding: 13px 16px; border: 0; border-radius: 10px; background: #123b72; color: white; font: inherit; font-weight: 700; cursor: pointer; }
+    .product-buy:hover { background: #176b87; }
+    .store-status { padding: 22px; margin: 10px auto; color: #526071; text-align: center; background: white; border: 1px solid #e6ebf2; border-radius: 14px; }
+    .purchase-dialog { width: min(92vw, 480px); margin: auto; padding: 0; border: 0; border-radius: 18px; color: #172033; box-shadow: 0 24px 70px rgba(7,20,40,.25); }
+    .purchase-dialog::backdrop { background: rgba(7,20,40,.6); }
+    .purchase-dialog-content { padding: 28px; }
+    .purchase-dialog h3 { color: #123b72; margin-bottom: 12px; }
+    .purchase-dialog p { color: #526071; margin-bottom: 20px; }
+    .purchase-dialog button { padding: 11px 18px; border: 0; border-radius: 9px; background: #123b72; color: white; font: inherit; font-weight: 700; cursor: pointer; }
 
     @media (max-width: 850px) {
-      nav {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-
-      nav a {
-        margin-left: 0;
-        margin-right: 12px;
-      }
-
-      .hero-content {
-        grid-template-columns: 1fr;
-      }
-
-      .features {
-        grid-template-columns: 1fr;
-      }
-
-      .dashboard-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-
-      .ebook {
-        grid-template-columns: 1fr;
-      }
+      nav { flex-direction: column; align-items: flex-start; }
+      nav .nav-links { gap: 10px 14px; }
+      .hero-content { grid-template-columns: 1fr; }
+      .features { grid-template-columns: 1fr; }
+      .dashboard-grid { grid-template-columns: repeat(2, 1fr); }
+      .ebook { grid-template-columns: 1fr; }
+      .product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
-
-    @media (max-width: 500px) {
-      .dashboard-grid {
-        grid-template-columns: 1fr;
-      }
-
-      section {
-        padding: 55px 5%;
-      }
-
-      .hero {
-        padding: 55px 5%;
-      }
+    @media (max-width: 560px) {
+      .dashboard-grid, .product-grid { grid-template-columns: 1fr; }
+      section { padding: 55px 5%; }
+      .hero { padding: 55px 5%; }
+      .section-title h2 { font-size: 30px; }
+      nav .nav-links { width: 100%; }
     }
   </style>
 </head>
-
 <body>
-
 <header>
   <nav>
     <div class="logo">DORA DIGITAL ACADEMY</div>
-
-    <div>
+    <div class="nav-links">
       <a href="#accueil">Accueil</a>
       <a href="#formations">Formations</a>
       <a href="#bibliotheque">Bibliothèque</a>
+      <a href="#boutique">Boutique eBooks</a>
       <a href="#espace">Mon espace</a>
     </div>
   </nav>
 </header>
-
 <main>
-
   <section class="hero" id="accueil">
     <div class="hero-content">
-
       <div>
         <span class="badge">PLATEFORME DIGITALE DE FORMATION</span>
-
-        <h1>
-          Apprenez.<br>
-          Créez.<br>
-          Développez.<br>
-          Réussissez.
-        </h1>
-
-        <p>
-          Bienvenue sur DORA DIGITAL ACADEMY, votre espace numérique
-          pour apprendre, développer vos compétences et transformer
-          vos idées en projets concrets.
-        </p>
-
+        <h1>Apprenez.<br>Créez.<br>Développez.<br>Réussissez.</h1>
+        <p>Bienvenue sur DORA DIGITAL ACADEMY, votre espace numérique pour apprendre, développer vos compétences et transformer vos idées en projets concrets.</p>
         <div class="buttons">
-          <a href="#formations" class="
-            btn btn-primary">Découvrir les formations</a>
-          <a href="#bibliotheque" class="btn btn-secondary">
-            Explorer la bibliothèque
-          </a>
+          <a href="#formations" class="btn btn-primary">Découvrir les formations</a>
+          <a href="#bibliotheque" class="btn btn-secondary">Explorer la bibliothèque</a>
         </div>
       </div>
-
       <div class="hero-card">
         <h3>Votre réussite commence ici</h3>
-
-        <div class="stat">
-          <strong>01</strong>
-          <span>Développez vos compétences</span>
-        </div>
-
-        <div class="stat">
-          <strong>02</strong>
-          <span>Apprenez à votre rythme</span>
-        </div>
-
-        <div class="stat">
-          <strong>03</strong>
-          <span>Concrétisez vos projets</span>
-        </div>
+        <div class="stat"><strong>01</strong><span>Développez vos compétences</span></div>
+        <div class="stat"><strong>02</strong><span>Apprenez à votre rythme</span></div>
+        <div class="stat"><strong>03</strong><span>Concrétisez vos projets</span></div>
       </div>
-
     </div>
   </section>
 
   <section id="formations">
     <div class="container">
-      <div class="section-title">
-        <h2>Nos formations</h2>
-        <p>Développez vos compétences et préparez votre avenir.</p>
-      </div>
-
+      <div class="section-title"><h2>Nos formations</h2><p>Développez vos compétences et préparez votre avenir.</p></div>
       <div class="features">
-        <article class="card">
-          <div class="icon">💻</div>
-          <h3>Compétences numériques</h3>
-          <p>Découvrez les outils numériques et améliorez votre maîtrise
-          des technologies utiles à vos projets.</p>
-        </article>
-
-        <article class="card">
-          <div class="icon">🤖</div>
-          <h3>Intelligence artificielle</h3>
-          <p>Apprenez à utiliser l'intelligence artificielle pour
-          développer vos idées et gagner en productivité.</p>
-        </article>
-
-        <article class="card">
-          <div class="icon">📈</div>
-          <h3>Entrepreneuriat digital</h3>
-          <p>Découvrez des méthodes pour structurer vos idées et
-          développer vos activités en ligne.</p>
-        </article>
+        <article class="card"><div class="icon">💻</div><h3>Compétences numériques</h3><p>Découvrez les outils numériques et améliorez votre maîtrise des technologies utiles à vos projets.</p></article>
+        <article class="card"><div class="icon">🤖</div><h3>Intelligence artificielle</h3><p>Apprenez à utiliser l'intelligence artificielle pour développer vos idées et gagner en productivité.</p></article>
+        <article class="card"><div class="icon">📈</div><h3>Entrepreneuriat digital</h3><p>Découvrez des méthodes pour structurer vos idées et développer vos activités en ligne.</p></article>
       </div>
     </div>
   </section>
 
   <section id="bibliotheque" class="library">
     <div class="container">
-      <div class="section-title">
-        <h2>Notre bibliothèque</h2>
-        <p>Des ressources pour apprendre, créer et progresser.</p>
-      </div>
-
+      <div class="section-title"><h2>Notre bibliothèque</h2><p>Des ressources pour apprendre, créer et progresser.</p></div>
       <div class="ebook">
-        <div class="ebook-cover">
-          <strong>IA</strong>
-          <h3>1 300+ PROMPTS IA</h3>
-          <p>Pour le business et la productivité</p>
-        </div>
-
-        <div class="ebook-info">
-          <h2>Développez vos idées avec l'IA</h2>
-          <p>
-            Explorez des ressources pratiques pour découvrir
-            de nouvelles possibilités avec l'intelligence artificielle.
-          </p>
-          <a href="#espace" class="btn btn-primary">
-            Découvrir les ressources
-          </a>
-        </div>
+        <div class="ebook-cover"><strong>IA</strong><h3>1 300+ PROMPTS IA</h3><p>Pour le business et la productivité</p></div>
+        <div class="ebook-info"><h2>Développez vos idées avec l'IA</h2><p>Explorez des ressources pratiques pour découvrir de nouvelles possibilités avec l'intelligence artificielle.</p><a href="#boutique" class="btn btn-primary">Voir la boutique d'eBooks</a></div>
       </div>
+    </div>
+  </section>
+
+  <section id="boutique" class="store-section">
+    <div class="container">
+      <div class="section-title"><h2>Boutique d'eBooks</h2><p>Découvrez nos livres numériques et nos ressources pratiques.</p></div>
+      <div class="store-toolbar"><label for="ebookSearch" style="position:absolute;left:-9999px;">Rechercher un eBook</label><input id="ebookSearch" class="store-search" type="search" placeholder="Rechercher un eBook…" autocomplete="off"></div>
+      <div id="storeStatus" class="store-status" role="status" aria-live="polite">Chargement du catalogue…</div>
+      <div id="productGrid" class="product-grid" aria-live="polite"></div>
+      <p style="margin:22px auto 0;max-width:760px;text-align:center;color:#687386;font-size:13px;">Le catalogue affiche les eBooks publiés dans DORA DIGITAL ACADEMY. Le paiement sécurisé et le téléchargement après achat ne sont pas encore activés.</p>
     </div>
   </section>
 
   <section id="espace" class="dashboard">
     <div class="container">
-      <div class="section-title">
-        <h2>Mon espace apprenant</h2>
-        <p>
-          Retrouvez ici les principales fonctionnalités prévues
-          pour votre parcours d'apprentissage.
-        </p>
-      </div>
-
+      <div class="section-title"><h2>Mon espace apprenant</h2><p>Retrouvez ici les principales fonctionnalités prévues pour votre parcours d'apprentissage.</p></div>
       <div class="dashboard-grid">
-        <div class="dashboard-item">
-          <span>📚</span>
-          <strong>Mes formations</strong>
-          <p>Suivez vos apprentissages.</p>
-        </div>
-
-        <div class="dashboard-item">
-          <span>📊</span>
-          <strong>Ma progression</strong>
-          <p>Suivez votre évolution.</p>
-        </div>
-
-        <div class="dashboard-item">
-          <span>🏆</span>
-          <strong>Mes certificats</strong>
-          <p>Retrouvez vos réussites.</p>
-        </div>
-
-        <div class="dashboard-item">
-          <span>👤</span>
-          <strong>Mon profil</strong>
-          <p>Préparez votre espace personnel.</p>
-        </div>
+        <div class="dashboard-item"><span>📚</span><strong>Mes formations</strong><p>Suivez vos apprentissages.</p></div>
+        <div class="dashboard-item"><span>📊</span><strong>Ma progression</strong><p>Suivez votre évolution.</p></div>
+        <div class="dashboard-item"><span>🏆</span><strong>Mes certificats</strong><p>Retrouvez vos réussites.</p></div>
+        <div class="dashboard-item"><span>👤</span><strong>Mon profil</strong><p>Préparez votre espace personnel.</p></div>
       </div>
-
-      <p style="text-align:center; margin-top:25px; color:#687386;">
-        L'accès aux fonctionnalités personnelles nécessitera
-        une connexion et leur intégration technique.
-      </p>
+      <p style="text-align:center;margin-top:25px;color:#687386;">L'accès aux fonctionnalités personnelles nécessitera une connexion et leur intégration technique.</p>
     </div>
   </section>
 
-  <section class="cta">
-    <div class="container">
-      <h2>Prêt à commencer ?</h2>
-      <p>
-        Faites le premier pas vers de nouvelles compétences
-        et donnez vie à vos projets.
-      </p>
-      <a href="#formations" class="btn">Explorer les formations</a>
-    </div>
-  </section>
-
+  <section class="cta"><div class="container"><h2>Prêt à commencer ?</h2><p>Faites le premier pas vers de nouvelles compétences et donnez vie à vos projets.</p><a href="#formations" class="btn">Explorer les formations</a></div></section>
 </main>
+<footer><p>© 2026 <strong>DORA DIGITAL ACADEMY</strong>. Tous droits réservés.</p><p>Apprenez. Créez. Développez. Réussissez.</p></footer>
 
-<footer>
-  <p>
-    © 2026 <strong>DORA DIGITAL ACADEMY</strong>.
-    Tous droits réservés.
-  </p>
-  <p>Apprenez. Créez. Développez. Réussissez.</p>
-</footer>
+<dialog id="purchaseInfo" class="purchase-dialog" aria-labelledby="purchaseInfoTitle">
+  <div class="purchase-dialog-content">
+    <h3 id="purchaseInfoTitle">Achat bientôt disponible</h3>
+    <p>Le catalogue est consultable. Le paiement sécurisé est encore en préparation : aucun paiement ni aucune commande n'ont été effectués par ce bouton.</p>
+    <button type="button" id="closePurchaseInfo">Fermer</button>
+  </div>
+</dialog>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function () {
+  "use strict";
+  const SUPABASE_URL = "https://wtbxjqamwitwogxdrkwd.supabase.co";
+  // Une clé publishable peut être utilisée dans le navigateur ; ne jamais y placer une clé secret/service_role.
+  const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_A0nQrTR74bt6_FV3BbaFLg_QMXRdQZ5";
+  const statusEl = document.getElementById("storeStatus");
+  const gridEl = document.getElementById("productGrid");
+  const searchEl = document.getElementById("ebookSearch");
+  const purchaseDialog = document.getElementById("purchaseInfo");
+  const closePurchaseInfo = document.getElementById("closePurchaseInfo");
+  let products = [];
+
+  function escapeHtml(value) {
+    return String(value == null ? "" : value).replace(/[&<>"']/g, function (character) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[character];
+    });
+  }
+
+  function formatPrice(product) {
+    const amount = product.sale_price != null ? product.sale_price : product.price;
+    const numericAmount = Number(amount);
+    if (!Number.isFinite(numericAmount)) return "Prix sur demande";
+    const formatted = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(numericAmount);
+    const currency = product.currency === "XAF" ? "FCFA" : (product.currency || "");
+    return formatted + (currency ? " " + escapeHtml(currency) : "");
+  }
+
+  function renderProducts(list) {
+    if (!list.length) {
+      gridEl.innerHTML = "";
+      statusEl.hidden = false;
+      statusEl.textContent = products.length ? "Aucun eBook ne correspond à votre recherche." : "Aucun eBook publié pour le moment. Revenez bientôt.";
+      return;
+    }
+    statusEl.hidden = true;
+    gridEl.innerHTML = list.map(function (product) {
+      const imageUrl = typeof product.cover_url === "string" && (product.cover_url.startsWith("https://") || product.cover_url.startsWith("/")) ? product.cover_url : "";
+      const cover = imageUrl
+        ? '<img src="' + escapeHtml(imageUrl) + '" alt="Couverture de ' + escapeHtml(product.title) + '" loading="lazy">'
+        : '<div class="product-art-label"><small>DORA DIGITAL ACADEMY</small>' + escapeHtml(product.title) + '</div>';
+      const description = product.short_description || product.description || "Ressource numérique pour apprendre et progresser.";
+      return '<article class="product-card">' +
+        '<div class="product-art">' + cover + '</div>' +
+        '<div class="product-copy">' +
+          '<span class="product-tag">Livre numérique</span>' +
+          '<h3>' + escapeHtml(product.title) + '</h3>' +
+          '<p>' + escapeHtml(description) + '</p>' +
+          '<div class="product-bottom"><div class="product-price">' + formatPrice(product) + '</div>' +
+          '<button class="product-buy" type="button" data-buy="' + escapeHtml(product.id) + '">Acheter cet eBook</button></div>' +
+        '</div></article>';
+    }).join("");
+  }
+
+  async function loadProducts() {
+    if (!window.supabase || typeof window.supabase.createClient !== "function") {
+      statusEl.textContent = "Le catalogue n'a pas pu se connecter. Vérifiez la connexion Internet puis actualisez la page.";
+      return;
+    }
+    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+    const { data, error } = await client.from("products")
+      .select("id,title,slug,short_description,description,cover_url,price,sale_price,currency,status,created_at")
+      .eq("status", "published")
+      .order("created_at", { ascending: false });
+    if (error) {
+      console.error("Erreur de chargement du catalogue :", error.message);
+      statusEl.textContent = "Le catalogue est momentanément indisponible. Réessayez plus tard.";
+      return;
+    }
+    products = Array.isArray(data) ? data : [];
+    renderProducts(products);
+  }
+
+  searchEl.addEventListener("input", function () {
+    const term = searchEl.value.trim().toLocaleLowerCase("fr");
+    renderProducts(products.filter(function (product) {
+      return [product.title, product.short_description, product.description].some(function (value) {
+        return String(value || "").toLocaleLowerCase("fr").includes(term);
+      });
+    }));
+  });
+
+  gridEl.addEventListener("click", function (event) {
+    const button = event.target.closest("[data-buy]");
+    if (!button) return;
+    if (purchaseDialog && typeof purchaseDialog.showModal === "function") purchaseDialog.showModal();
+    else window.alert("Le paiement sécurisé sera activé dans une prochaine étape. Aucun paiement n'a été effectué.");
+  });
+
+  closePurchaseInfo.addEventListener("click", function () { purchaseDialog.close(); });
+  loadProducts().catch(function (error) {
+    console.error("Erreur inattendue du catalogue :", error);
+    statusEl.textContent = "Une erreur inattendue empêche le chargement du catalogue.";
+  });
+})();
+</script>
 </body>
 </html>
