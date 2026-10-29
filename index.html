@@ -324,11 +324,66 @@
   gridEl.addEventListener("click",async function(event){const button=event.target.closest("[data-buy]");if(!button)return;const p=products.find(x=>x.id===button.getAttribute("data-buy"));if(!p)return;const session=await getSession().catch(()=>null);if(!session){pendingProduct=p;authDialog.showModal();setAuthMessage("Connectez-vous ou créez un compte pour poursuivre l'achat.");return;}showPurchase(p);});
   purchaseForm.addEventListener("submit",async function(event){
     event.preventDefault();if(!selectedProduct)return;const session=await getSession().catch(()=>null);if(!session){purchaseDialog.close();pendingProduct=selectedProduct;authDialog.showModal();setAuthMessage("Votre session a expiré. Reconnectez-vous.");return;}
-    const phone=document.getElementById("paymentPhone").value.trim();const digits=phone.replace(/[\s()+.-]/g,"");if(!/^235[0-9]{8}$/.test(digits)){setPaymentMessage("Saisissez un numéro tchadien valide au format +XXXXXXXXXXX.");return;}
-    const btn=document.getElementById("startPaymentBtn");btn.disabled=true;setPaymentMessage("Demande de paiement test en cours…");
-    try{const {data,error}=await client.functions.invoke("create-payment",{body:{product_id:selectedProduct.id,provider:document.getElementById("paymentProvider").value,phone:phone}});if(error)throw error;if(!data||!data.ok)throw new Error(data?.error||"La demande de paiement a été refusée.");setPaymentMessage("Demande créée : "+data.order_number+". Statut : "+data.status+". Attendez la confirmation PayCentral; l'accès au fichier reste bloqué jusque-là.");if(data.checkout_url&&/^https:\/\//.test(data.checkout_url)){setPaymentMessage("Ouverture de la page de paiement de test…");window.location.assign(data.checkout_url);}}
-    catch(error){console.error("Paiement test:",error);setPaymentMessage(error?.message||"Impossible de lancer le paiement. Vérifiez la configuration serveur.");}finally{btn.disabled=false;}
+const phone = document.getElementById("paymentPhone").value.trim();
+
+const normalizedPhone = phone.replace(/[\s().-]/g, "");
+const digits = normalizedPhone.startsWith("+")
+  ? normalizedPhone.slice(1)
+  : normalizedPhone;
+
+if (
+  !normalizedPhone.startsWith("+") ||
+  !/^[1-9][0-9]{7,14}$/.test(digits)
+) {
+  setPaymentMessage(
+    "Entrez un numéro Mobile Money au format international, avec + et l’indicatif du pays."
+  );
+  return;
+}
+
+const btn = document.getElementById("startPaymentBtn");
+btn.disabled = true;
+setPaymentMessage("Demande de paiement test en cours…");
+
+try {
+  const { data, error } = await client.functions.invoke("create-payment", {
+    body: {
+      product_id: selectedProduct.id,
+      provider: document.getElementById("paymentProvider").value,
+      phone: phone
+    }
   });
+
+  if (error) throw error;
+
+  if (!data || !data.ok) {
+    throw new Error(
+      data?.error || "La demande de paiement a été refusée."
+    );
+  }
+
+  setPaymentMessage(
+    "Demande créée : " + data.order_number +
+    ". Statut : " + data.status +
+    ". Attendez la confirmation PayCentral ; l'accès au fichier reste bloqué jusque-là."
+  );
+
+  if (data.checkout_url && /^https:\/\//.test(data.checkout_url)) {
+    setPaymentMessage("Ouverture de la page de paiement de test…");
+    window.location.assign(data.checkout_url);
+  }
+} catch (error) {
+  console.error("Paiement test:", error);
+  setPaymentMessage(
+    error?.message ||
+    "Impossible de lancer le paiement. Vérifiez la configuration serveur."
+  );
+} finally {
+  btn.disabled = false;
+}
+});
+
+
   document.getElementById("closePurchaseInfo").addEventListener("click",()=>purchaseDialog.close());
   document.getElementById("refreshAccount").addEventListener("click",()=>refreshPurchases().catch(e=>{console.error(e);accountStatus.textContent="Impossible de charger vos achats. Réessayez plus tard.";}));
   signOutBtn.addEventListener("click",async()=>{const {error}=await client.auth.signOut();if(error){accountStatus.textContent="Déconnexion impossible. Réessayez.";return;}updateAuthUI(null);authDialog.close();});
