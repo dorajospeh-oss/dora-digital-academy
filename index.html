@@ -223,7 +223,7 @@
     <p id="purchaseProductName">Choisissez votre moyen de paiement.</p>
     <form id="purchaseForm">
       <div class="dialog-field"><label for="paymentProvider">Moyen de paiement</label><select id="paymentProvider" required><option value="orange">Orange Money</option><option value="airtel">Airtel Money</option></select></div>
-      <div class="dialog-field"><label for="paymentPhone">Numéro Mobile Money (avec indicatif du pays)</label><input id="paymentPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+235XXXXXXXX" required></div>
+      <div class="dialog-field"><label for="paymentPhone">Numéro Mobile Money (avec indicatif du pays)</label><input id="paymentPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+XXXXXXXXXXX" required></div>
       <div class="dialog-actions"><button type="submit" id="startPaymentBtn">Lancer le paiement test</button><button type="button" id="closePurchaseInfo">Annuler</button></div>
     </form>
     <p id="paymentMessage" class="dialog-message" role="status" aria-live="polite">Le paiement est en mode test. N'effectuez aucun paiement réel.</p>
@@ -324,7 +324,7 @@
   gridEl.addEventListener("click",async function(event){const button=event.target.closest("[data-buy]");if(!button)return;const p=products.find(x=>x.id===button.getAttribute("data-buy"));if(!p)return;const session=await getSession().catch(()=>null);if(!session){pendingProduct=p;authDialog.showModal();setAuthMessage("Connectez-vous ou créez un compte pour poursuivre l'achat.");return;}showPurchase(p);});
   purchaseForm.addEventListener("submit",async function(event){
     event.preventDefault();if(!selectedProduct)return;const session=await getSession().catch(()=>null);if(!session){purchaseDialog.close();pendingProduct=selectedProduct;authDialog.showModal();setAuthMessage("Votre session a expiré. Reconnectez-vous.");return;}
-    const phone=document.getElementById("paymentPhone").value.trim();const digits=phone.replace(/[\s()+.-]/g,"");if(!/^235[0-9]{8}$/.test(digits)){setPaymentMessage("Saisissez un numéro tchadien valide au format +235XXXXXXXX.");return;}
+    const phone=document.getElementById("paymentPhone").value.trim();const digits=phone.replace(/[\s()+.-]/g,"");if(!/^235[0-9]{8}$/.test(digits)){setPaymentMessage("Saisissez un numéro tchadien valide au format +XXXXXXXXXXX.");return;}
     const btn=document.getElementById("startPaymentBtn");btn.disabled=true;setPaymentMessage("Demande de paiement test en cours…");
     try{const {data,error}=await client.functions.invoke("create-payment",{body:{product_id:selectedProduct.id,provider:document.getElementById("paymentProvider").value,phone:phone}});if(error)throw error;if(!data||!data.ok)throw new Error(data?.error||"La demande de paiement a été refusée.");setPaymentMessage("Demande créée : "+data.order_number+". Statut : "+data.status+". Attendez la confirmation PayCentral; l'accès au fichier reste bloqué jusque-là.");if(data.checkout_url&&/^https:\/\//.test(data.checkout_url)){setPaymentMessage("Ouverture de la page de paiement de test…");window.location.assign(data.checkout_url);}}
     catch(error){console.error("Paiement test:",error);setPaymentMessage(error?.message||"Impossible de lancer le paiement. Vérifiez la configuration serveur.");}finally{btn.disabled=false;}
