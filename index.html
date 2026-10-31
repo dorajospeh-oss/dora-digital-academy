@@ -502,8 +502,6 @@ try {
   btn.disabled = false;
 }
 });
-
-
   document.getElementById("closePurchaseInfo").addEventListener("click",()=>purchaseDialog.close());
   document.getElementById("refreshAccount").addEventListener("click",()=>refreshPurchases().catch(e=>{console.error(e);accountStatus.textContent="Impossible de charger vos achats. Réessayez plus tard.";}));
   signOutBtn.addEventListener("click",async()=>{const {error}=await client.auth.signOut();if(error){accountStatus.textContent="Déconnexion impossible. Réessayez.";return;}updateAuthUI(null);authDialog.close();});
