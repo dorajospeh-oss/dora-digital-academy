@@ -413,20 +413,133 @@
     const session=await getSession().catch(()=>null);updateAuthUI(session);
   }
   function updateAuthUI(session){authOpen.textContent=session?"Mon compte":"Se connecter";signOutBtn.hidden=!session;if(session){accountStatus.textContent="Connecté : "+(session.user.email||"compte apprenant")+". Vous pouvez actualiser vos achats.";}else{accountStatus.textContent="Connectez-vous pour consulter vos achats et télécharger les eBooks acquis.";purchaseList.innerHTML="";}}
-  async function refreshPurchases(){
-    const session=await getSession().catch(()=>null);
-    if(!session){accountStatus.textContent="Connectez-vous pour consulter vos achats.";authDialog.showModal();setAuthMessage("Connectez-vous pour retrouver vos achats.");return;}
-    accountStatus.textContent="Recherche de vos achats confirmés…";purchaseList.innerHTML="";
-    // Le serveur reste l'autorité pour l'accès aux fichiers. La fonction secure-download refuse tout achat non confirmé.
-    const ownedProducts=[];
-    for(const p of products){
-      const {data,error}=await client.functions.invoke("secure-download",{body:{product_id:p.id}});
-      if(!error && data && data.ok && data.url) ownedProducts.push({product:p,url:data.url});
+async function refreshPurchases(){
+    const session = await getSession().catch(() => null);
+
+    if(!session){
+      accountStatus.textContent = "Connectez-vous pour consulter vos achats.";
+      authDialog.showModal();
+      setAuthMessage("Connectez-vous pour retrouver vos achats.");
+      return;
     }
-    if(!ownedProducts.length){accountStatus.textContent="Aucun téléchargement disponible pour le moment. Un eBook apparaît ici après confirmation du paiement.";return;}
-    accountStatus.textContent="Vos téléchargements autorisés :";
-    purchaseList.innerHTML=ownedProducts.map(x=>'<p style="margin:10px 0;"><strong>'+escapeHtml(x.product.title)+'</strong> — <a href="'+escapeHtml(x.url)+'" target="_blank" rel="noopener">Télécharger le PDF (lien temporaire)</a></p>').join("");
+
+    accountStatus.textContent = "Recherche de vos achats confirmés…";
+    purchaseList.innerHTML = "";
+
+    const { data: accessRows, error } = await client
+      .from("product_access")
+      .select("product_id, expires_at, revoked_at")
+      .eq("user_id", session.user.id)
+      .is("revoked_at", null);
+
+    if(error){
+      console.error("Erreur de récupération des achats :", error);
+      accountStatus.textContent = "Impossible de récupérer vos achats. Réessayez.";
+      return;
+    }
+
+    const now = Date.now();
+
+    const authorizedIds = new Set(
+      (accessRows || [])
+        .filter(row => !row.expires_at || new Date(row.expires_at).getTime() > now)
+        .map(row => row.product_id)
+    );
+
+    const ownedProducts = products.filter(product => authorizedIds.has(product.id));
+
+    if(!ownedProducts.length){
+      accountStatus.textContent =
+        "Aucun téléchargement disponible pour le moment. Un produit apparaîtra ici après confirmation du paiement.";
+      return;
+    }
+
+    accountStatus.textContent = "Vos produits disponibles :";
+
+    purchaseList.innerHTML = ownedProducts.map(product => `
+      <div style="margin:12px 0;padding:12px;border:1px solid #ddd;border-radius:8px;">
+        <strong>${escapeHtml(product.title)}</strong>
+        <br>
+        <button
+          type="button"
+          data-download-product="${escapeHtml(product.id)}"
+          style="margin-top:8px;">
+          Préparer mon téléchargement
+        </button>
+      </div>
+    `).join("");
+}
+  purchaseList.addEventListener("click", async function(event) {
+  const button = event.target instanceof Element
+    ? event.target.closest("[data-download-product]")
+    : null;
+
+  if (!button) return;
+
+  const productId = button.getAttribute("data-download-product");
+
+  if (!productId) return;
+
+  const session = await getSession().catch(() => null);
+
+  if (!session) {
+    accountStatus.textContent = "Connectez-vous pour télécharger votre produit.";
+    authDialog.showModal();
+    return;
   }
+
+  const downloadTab = window.open("about:blank", "_blank");
+
+  button.disabled = true;
+  button.textContent = "Préparation en cours…";
+  accountStatus.textContent = "Préparation de votre téléchargement sécurisé…";
+
+  try {
+    const { data, error } = await client.functions.invoke(
+      "secure-download",
+      {
+        body: {
+          product_id: productId
+        }
+      }
+    );
+
+    if (error) throw error;
+
+    if (!data || !data.ok || !data.url) {
+      throw new Error(data?.error || "Impossible de préparer le téléchargement.");
+    }
+
+    if (downloadTab) {
+      downloadTab.location.href = data.url;
+    } else {
+      const link = document.createElement("a");
+      link.href = data.url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = "Ouvrir le téléchargement";
+      link.style.display = "inline-block";
+      link.style.marginTop = "8px";
+
+      button.insertAdjacentElement("afterend", link);
+    }
+
+    accountStatus.textContent =
+      "Votre téléchargement est prêt. Le lien temporaire est valable 5 minutes.";
+
+  } catch (error) {
+    console.error("Téléchargement :", error);
+
+    if (downloadTab) downloadTab.close();
+
+    accountStatus.textContent =
+      error.message || "Une erreur empêche le téléchargement.";
+
+  } finally {
+    button.disabled = false;
+    button.textContent = "Préparer mon téléchargement";
+  }
+});
   authOpen.addEventListener("click",async function(){const session=await getSession().catch(()=>null);if(session){authDialog.showModal();setAuthMessage("Vous êtes connecté avec "+(session.user.email||"votre compte")+".");}else{authDialog.showModal();setAuthMessage("Connectez-vous ou créez un compte pour acheter.");}});
   document.getElementById("closeAuth").addEventListener("click",()=>authDialog.close());
   authForm.addEventListener("submit",async function(event){
