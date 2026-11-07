@@ -460,92 +460,75 @@
 }
  async function loadProducts(){
 
-    if(!window.supabase || typeof window.supabase.createClient !== "function"){
-      statusEl.textContent = "Catalogue indisponible : vérifiez votre connexion puis actualisez.";
-      return;
-    }
+  if(!window.supabase || typeof window.supabase.createClient !== "function"){
+    statusEl.textContent = "Catalogue indisponible : vérifiez votre connexion puis actualisez.";
+    return;
+  }
 
-    // 1. INITIALISER SUPABASE EN PREMIER
-    client = window.supabase.createClient(
-      SUPABASE_URL,
-      SUPABASE_PUBLISHABLE_KEY
-    );
+  // Initialisation de Supabase
+  client = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_PUBLISHABLE_KEY
+  );
 
-    // 2. ÉCOUTER LES ÉVÉNEMENTS D'AUTHENTIFICATION
-    client.auth.onAuthStateChange((event, session) => {
-
-      updateAuthUI(session);
-
-      if(event === "PASSWORD_RECOVERY"){
-
-        const recoveryDialog =
-          document.getElementById("passwordRecoveryDialog");
-
-        const recoveryMessage =
-          document.getElementById("passwordRecoveryMessage");
-
-        recoveryMessage.textContent =
-          "Lien de récupération validé. Choisissez votre nouveau mot de passe.";
-
-        if(recoveryDialog && !recoveryDialog.open){
-          recoveryDialog.showModal();
-        }
-      }
-
-    });
-
-    // 3. TRAITER LES TÉLÉCHARGEMENTS INVITÉS
-    await handleGuestDownload();
-
-    // 4. CHARGER LES PRODUITS
-    const { data, error } = await client
-      .from("products")
-      .select("id,title,slug,short_description,description,cover_url,price,sale_price,currency,status,created_at")
-      .eq("status", "published")
-      .order("created_at", { ascending: false });
-
-    if(error){
-      console.error("Catalogue :", error.message);
-      statusEl.textContent = "Le catalogue est momentanément indisponible. Réessayez plus tard.";
-      return;
-    }
-
-    products = Array.isArray(data) ? data : [];
-
-    renderProducts(products);
-
-    // 5. ACTUALISER LA SESSION
-    const session = await getSession().catch(() => null);
+  // Écoute des événements d'authentification
+  client.auth.onAuthStateChange((event, session) => {
 
     updateAuthUI(session);
-}
-  updateAuthUI(session);
 
-  if (event === "PASSWORD_RECOVERY") {
+    if(event === "PASSWORD_RECOVERY"){
 
-    const recoveryDialog =
-      document.getElementById("passwordRecoveryDialog");
+      const recoveryDialog = document.getElementById("passwordRecoveryDialog");
+      const recoveryMessage = document.getElementById("passwordRecoveryMessage");
 
-    const recoveryMessage =
-      document.getElementById("passwordRecoveryMessage");
+      recoveryMessage.textContent =
+        "Lien de récupération validé. Choisissez votre nouveau mot de passe.";
 
-    recoveryMessage.textContent =
-      "Lien de récupération validé. Choisissez votre nouveau mot de passe.";
-
-    if (recoveryDialog && !recoveryDialog.open) {
-      recoveryDialog.showModal();
+      if(recoveryDialog && !recoveryDialog.open){
+        recoveryDialog.showModal();
+      }
     }
+
+  });
+
+  await handleGuestDownload();
+
+  // Chargement du catalogue
+  const { data, error } = await client
+    .from("products")
+    .select("id,title,slug,short_description,description,cover_url,price,sale_price,currency,status,created_at")
+    .eq("status", "published")
+    .order("created_at", { ascending: false });
+
+  if(error){
+    console.error("Catalogue :", error.message);
+    statusEl.textContent = "Le catalogue est momentanément indisponible. Réessayez plus tard.";
+    return;
   }
 
-});
-    client=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
-   await handleGuestDownload();
-     const {data,error}=await client.from("products").select("id,title,slug,short_description,description,cover_url,price,sale_price,currency,status,created_at").eq("status","published").order("created_at",{ascending:false});
-    if(error){console.error("Catalogue:",error.message);statusEl.textContent="Le catalogue est momentanément indisponible. Réessayez plus tard.";return;}
-    products=Array.isArray(data)?data:[];renderProducts(products);
-    const session=await getSession().catch(()=>null);updateAuthUI(session);
+  products = Array.isArray(data) ? data : [];
+
+  renderProducts(products);
+
+  const session = await getSession().catch(() => null);
+  updateAuthUI(session);
+}
+
+function updateAuthUI(session){
+
+  authOpen.textContent = session ? "Mon compte" : "Se connecter";
+  signOutBtn.hidden = !session;
+
+  if(session){
+    accountStatus.textContent =
+      "Connecté : " + (session.user.email || "compte apprenant") +
+      ". Vous pouvez actualiser vos achats.";
+  }else{
+    accountStatus.textContent =
+      "Connectez-vous pour consulter vos achats et télécharger les eBooks acquis.";
+    purchaseList.innerHTML = "";
   }
-  function updateAuthUI(session){authOpen.textContent=session?"Mon compte":"Se connecter";signOutBtn.hidden=!session;if(session){accountStatus.textContent="Connecté : "+(session.user.email||"compte apprenant")+". Vous pouvez actualiser vos achats.";}else{accountStatus.textContent="Connectez-vous pour consulter vos achats et télécharger les eBooks acquis.";purchaseList.innerHTML="";}}
+}
 async function refreshPurchases(){
     const session = await getSession().catch(() => null);
 
