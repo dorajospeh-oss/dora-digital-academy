@@ -221,12 +221,67 @@
     <form id="authForm">
       <div class="dialog-field"><label for="authEmail">Adresse e-mail</label><input id="authEmail" type="email" autocomplete="email" required></div>
       <div class="dialog-field"><label for="authPassword">Mot de passe (8 caractères minimum)</label><input id="authPassword" type="password" minlength="8" autocomplete="current-password" required></div>
-      <div class="dialog-actions"><button type="submit" id="signInBtn">Se connecter</button><button type="button" id="signUpBtn">Créer un compte</button><button type="button" id="closeAuth">Fermer</button></div>
+     <div class="dialog-actions">
+  <button type="submit" id="signInBtn">Se connecter</button>
+  <button type="button" id="signUpBtn">Créer un compte</button>
+  <button type="button" id="closeAuth">Fermer</button>
+</div> 
+
+<div class="dialog-actions">
+  <button type="button" id="forgotPasswordBtn">Mot de passe oublié ?</button>
+</div>
     </form>
     <p id="authMessage" class="dialog-message" role="status" aria-live="polite"></p>
   </div>
 </dialog>
-<dialog id="purchaseInfo" class="purchase-dialog" aria-labelledby="purchaseInfoTitle">
+<dialog id="passwordRecoveryDialog" class="purchase-dialog" aria-labelledby="passwordRecoveryTitle">
+  <div class="purchase-dialog-content">
+    <h3 id="passwordRecoveryTitle">Choisir un nouveau mot de passe</h3>
+
+    <p>
+      Saisissez votre nouveau mot de passe et confirmez-le.
+    </p>
+
+    <form id="passwordRecoveryForm">
+
+      <div class="dialog-field">
+        <label for="newPassword">Nouveau mot de passe</label>
+        <input
+          id="newPassword"
+          type="password"
+          minlength="8"
+          autocomplete="new-password"
+          required
+        >
+      </div>
+
+      <div class="dialog-field">
+        <label for="confirmNewPassword">Confirmer le mot de passe</label>
+        <input
+          id="confirmNewPassword"
+          type="password"
+          minlength="8"
+          autocomplete="new-password"
+          required
+        >
+      </div>
+
+      <div class="dialog-actions">
+        <button type="submit" id="saveNewPasswordBtn">
+          Enregistrer le nouveau mot de passe
+        </button>
+
+        <button type="button" id="closePasswordRecovery">
+          Fermer
+        </button>
+      </div>
+
+    </form>
+
+    <p id="passwordRecoveryMessage" class="dialog-message" role="status" aria-live="polite"></p>
+  </div>
+</dialog>
+  <dialog id="purchaseInfo" class="purchase-dialog" aria-labelledby="purchaseInfoTitle">
   <div class="purchase-dialog-content">
     <h3 id="purchaseInfoTitle">Acheter cet eBook</h3>
     <p id="purchaseProductName">Choisissez votre moyen de paiement.</p>
@@ -405,6 +460,28 @@
 }
   async function loadProducts(){
     if(!window.supabase || typeof window.supabase.createClient!=="function"){statusEl.textContent="Catalogue indisponible : vérifiez votre connexion puis actualisez.";return;}
+    // Détection du retour après une demande de récupération
+client.auth.onAuthStateChange((event, session) => {
+
+  updateAuthUI(session);
+
+  if (event === "PASSWORD_RECOVERY") {
+
+    const recoveryDialog =
+      document.getElementById("passwordRecoveryDialog");
+
+    const recoveryMessage =
+      document.getElementById("passwordRecoveryMessage");
+
+    recoveryMessage.textContent =
+      "Lien de récupération validé. Choisissez votre nouveau mot de passe.";
+
+    if (recoveryDialog && !recoveryDialog.open) {
+      recoveryDialog.showModal();
+    }
+  }
+
+});
     client=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
    await handleGuestDownload();
      const {data,error}=await client.from("products").select("id,title,slug,short_description,description,cover_url,price,sale_price,currency,status,created_at").eq("status","published").order("created_at",{ascending:false});
@@ -547,6 +624,94 @@ async function refreshPurchases(){
     const {data,error}=await client.auth.signInWithPassword({email,password});btn.disabled=false;
     if(error){setAuthMessage("Connexion impossible : "+error.message);return;}updateAuthUI(data.session);authDialog.close();if(pendingProduct){const p=pendingProduct;pendingProduct=null;showPurchase(p);}
   });
+  // DEMANDE DE RÉINITIALISATION DU MOT DE PASSE
+document.getElementById("forgotPasswordBtn").addEventListener("click", async function() {
+
+  const email = document.getElementById("authEmail").value.trim();
+  const button = document.getElementById("forgotPasswordBtn");
+
+  if (!email) {
+    setAuthMessage("Veuillez saisir votre adresse e-mail.");
+    document.getElementById("authEmail").focus();
+    return;
+  }
+
+  button.disabled = true;
+  setAuthMessage("Envoi de la demande en cours…");
+
+  try {
+    const { error } = await client.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + window.location.pathname
+    });
+
+    if (error) throw error;
+
+    setAuthMessage(
+      "Si cette adresse correspond à un compte, un e-mail de réinitialisation vient d'être envoyé. Vérifiez également vos courriers indésirables."
+    );
+
+  } catch (error) {
+    console.error("Réinitialisation :", error);
+    setAuthMessage(
+      error.message || "Impossible d'envoyer la demande. Réessayez."
+    );
+
+  } finally {
+    button.disabled = false;
+  }
+});
+
+
+// ENREGISTREMENT DU NOUVEAU MOT DE PASSE
+document.getElementById("passwordRecoveryForm").addEventListener("submit", async function(event) {
+
+  event.preventDefault();
+
+  const password = document.getElementById("newPassword").value;
+  const confirmation = document.getElementById("confirmNewPassword").value;
+  const button = document.getElementById("saveNewPasswordBtn");
+  const message = document.getElementById("passwordRecoveryMessage");
+
+  if (password.length < 8) {
+    message.textContent = "Le mot de passe doit contenir au moins 8 caractères.";
+    return;
+  }
+
+  if (password !== confirmation) {
+    message.textContent = "Les deux mots de passe ne correspondent pas.";
+    return;
+  }
+
+  button.disabled = true;
+  message.textContent = "Enregistrement du nouveau mot de passe…";
+
+  try {
+    const { error } = await client.auth.updateUser({
+      password: password
+    });
+
+    if (error) throw error;
+
+    message.textContent =
+      "Votre mot de passe a été modifié avec succès. Vous pouvez désormais utiliser votre nouveau mot de passe.";
+
+    document.getElementById("passwordRecoveryForm").reset();
+
+  } catch (error) {
+    console.error("Modification du mot de passe :", error);
+    message.textContent =
+      error.message || "Impossible de modifier le mot de passe.";
+
+  } finally {
+    button.disabled = false;
+  }
+});
+
+
+// FERMETURE DE LA FENÊTRE
+document.getElementById("closePasswordRecovery").addEventListener("click", function() {
+  document.getElementById("passwordRecoveryDialog").close();
+});
   document.getElementById("signUpBtn").addEventListener("click",async function(){
     const email=document.getElementById("authEmail").value.trim();const password=document.getElementById("authPassword").value;
     if(!email||password.length<8){setAuthMessage("Saisissez un e-mail valide et un mot de passe d'au moins 8 caractères.");return;}
@@ -643,7 +808,10 @@ try {
   document.getElementById("closePurchaseInfo").addEventListener("click",()=>purchaseDialog.close());
   document.getElementById("refreshAccount").addEventListener("click",()=>refreshPurchases().catch(e=>{console.error(e);accountStatus.textContent="Impossible de charger vos achats. Réessayez plus tard.";}));
   signOutBtn.addEventListener("click",async()=>{const {error}=await client.auth.signOut();if(error){accountStatus.textContent="Déconnexion impossible. Réessayez.";return;}updateAuthUI(null);authDialog.close();});
-  loadProducts().then(function(){if(client){client.auth.onAuthStateChange((_event,session)=>updateAuthUI(session));}}).catch(function(error){console.error("Erreur boutique:",error);statusEl.textContent="Une erreur inattendue empêche le chargement du catalogue.";});
+ loadProducts().catch(function(error){
+  console.error("Erreur boutique:",error);
+  statusEl.textContent="Une erreur inattendue empêche le chargement du catalogue.";
+});
 })();
 </script>
 </body>
