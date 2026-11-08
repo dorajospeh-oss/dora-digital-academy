@@ -27,3 +27,310 @@
 
 /* V1.12 — SEO/accessibility polish */
 :focus-visible{outline:3px solid var(--gold);outline-offset:3px}button,.btn,a{touch-action:manipulation}.muted a{text-decoration:underline} 
+/* ==========================================
+   DORA DIGITAL ACADEMY - CORPORATE DESIGN
+========================================== */
+
+.dda-site-header {
+  height: auto;
+  padding: 16px 5%;
+  background: linear-gradient(135deg,#123b72,#176b87);
+  color: white;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: 0 5px 20px #123b721c;
+}
+
+.dda-header-inner {
+  max-width: 1200px;
+  margin: auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+}
+
+.dda-brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  color: white;
+}
+
+.dda-brand-mark {
+  width: 45px;
+  height: 45px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: white;
+  color: #123b72;
+  font-size: 27px;
+  font-weight: 900;
+}
+
+.dda-brand-copy strong,
+.dda-brand-copy small {
+  display: block;
+}
+
+.dda-brand-copy strong {font-size:15px}
+.dda-brand-copy small {font-size:9px;letter-spacing:1.5px}
+
+.dda-nav {
+  display:flex;
+  align-items:center;
+  gap:18px;
+  margin:0;
+}
+
+.dda-nav a,
+.dda-header-actions a {
+  color:white;
+  font-size:13px;
+  font-weight:600;
+  white-space:nowrap;
+}
+
+.dda-header-actions {
+  display:flex;
+  align-items:center;
+  gap:14px;
+}
+
+.dda-nav-auth {
+  padding:10px 16px;
+  border:1px solid white;
+  border-radius:9px;
+}
+
+.dda-home {background:#f5f7fb;color:#172033;line-height:1.6}
+main:has(.dda-home) {padding:0}
+
+.dda-container {max-width:1200px;margin:auto}
+
+.dda-hero {
+  padding:75px 6%;
+  background:linear-gradient(135deg,#eaf6ff,#fff);
+}
+
+.dda-hero-grid {
+  display:grid;
+  grid-template-columns:1.2fr .8fr;
+  gap:50px;
+  align-items:center;
+}
+
+.dda-badge {
+  display:inline-block;
+  background:#dff4eb;
+  color:#08764e;
+  padding:8px 14px;
+  border-radius:30px;
+  font-size:13px;
+  font-weight:bold;
+  margin-bottom:20px;
+}
+
+.dda-hero h1 {
+  font-size:clamp(38px,6vw,68px);
+  line-height:1.05;
+  margin-bottom:22px;
+  color:#123b72;
+}
+
+.dda-hero p {
+  font-size:19px;
+  color:#526071;
+  max-width:650px;
+  margin-bottom:30px;
+}
+
+.dda-buttons {display:flex;gap:15px;flex-wrap:wrap}
+
+.dda-btn {
+  display:inline-block;
+  padding:14px 24px;
+  border-radius:10px;
+  text-decoration:none;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+.dda-btn-primary {background:#123b72;color:white}
+.dda-btn-secondary {background:white;color:#123b72;border:1px solid #d5deea}
+.dda-btn-light {background:white;color:#123b72}
+
+.dda-hero-card {
+  background:white;
+  padding:30px;
+  border-radius:24px;
+  box-shadow:0 20px 60px #123b721f;
+}
+
+.dda-hero-card h3 {color:#123b72;margin-bottom:15px}
+
+.dda-stat {padding:15px 0;border-bottom:1px solid #edf0f5}
+.dda-stat:last-child {border-bottom:none}
+.dda-stat strong {display:block;font-size:26px;color:#176b87}
+
+.dda-section {padding:70px 6%}
+
+.dda-section-title {text-align:center;margin-bottom:32px}
+.dda-section-title h2 {color:#123b72;font-size:36px;margin-bottom:10px}
+.dda-section-title p {color:#687386}
+
+.dda-features {
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:22px;
+}
+
+.dda-card {
+  background:white;
+  padding:28px;
+  border-radius:18px;
+  box-shadow:0 8px 30px #14233c12;
+  transition:.2s;
+}
+
+.dda-card:hover {transform:translateY(-5px)}
+
+.dda-icon {
+  width:52px;
+  height:52px;
+  display:grid;
+  place-items:center;
+  background:#eaf6ff;
+  border-radius:14px;
+  font-size:25px;
+  margin-bottom:18px;
+}
+
+.dda-card h3 {color:#123b72;margin-bottom:10px}
+.dda-card p {color:#697586;font-size:15px}
+.dda-card-link {color:#176b87;font-weight:bold}
+
+.dda-library {background:#eef6f8}
+
+.dda-ebook {
+  display:grid;
+  grid-template-columns:1fr 2fr;
+  gap:30px;
+  align-items:center;
+}
+
+.dda-ebook-cover {
+  min-height:300px;
+  border-radius:20px;
+  padding:30px;
+  background:linear-gradient(145deg,#123b72,#176b87);
+  color:white;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  text-align:center;
+}
+
+.dda-ebook-cover strong {font-size:42px;margin-bottom:15px}
+.dda-ebook-info h2 {color:#123b72;margin-bottom:15px;font-size:32px}
+.dda-ebook-info p {color:#596579;margin-bottom:20px}
+
+.dda-store {background:#f5f8fc}
+
+.dda-store-box {
+  max-width:760px;
+  margin:auto;
+  padding:35px;
+  background:white;
+  border:1px solid #e6ebf2;
+  border-radius:20px;
+  text-align:center;
+}
+
+.dda-store-icon {font-size:45px}
+.dda-store-box h3 {color:#123b72}
+.dda-store-box p {color:#697586;margin-bottom:22px}
+
+.dda-dashboard {background:white}
+
+.dda-dashboard-grid {
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:18px;
+}
+
+.dda-dashboard-item {
+  display:block;
+  background:#f7f9fc;
+  border:1px solid #e7ebf1;
+  padding:25px;
+  border-radius:16px;
+  text-align:center;
+}
+
+.dda-dashboard-item span {font-size:30px;display:block}
+.dda-dashboard-item strong {display:block;color:#123b72}
+.dda-dashboard-item p {color:#697586;font-size:13px}
+
+.dda-account-panel {
+  margin-top:22px;
+  padding:25px;
+  background:#f7f9fc;
+  border:1px solid #e7ebf1;
+  border-radius:14px;
+}
+
+.dda-cta {
+  padding:70px 6%;
+  background:linear-gradient(135deg,#123b72,#176b87);
+  color:white;
+  text-align:center;
+}
+
+.dda-cta h2 {font-size:38px;margin-bottom:15px}
+.dda-cta p {max-width:650px;margin:0 auto 25px}
+
+.dda-site-footer {
+  background:#0c203d;
+  color:#cbd5e1;
+  padding:35px 6%;
+}
+
+.dda-footer-inner {
+  max-width:1200px;
+  margin:auto;
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:18px;
+  align-items:center;
+}
+
+.dda-footer-inner strong {color:white}
+.dda-footer-inner nav {display:flex;gap:20px}
+.dda-footer-inner nav a {color:#cbd5e1;font-size:13px}
+
+.dda-footer-inner small {
+  grid-column:1/-1;
+  border-top:1px solid #ffffff20;
+  padding-top:15px;
+}
+
+@media(max-width:950px) {
+  .dda-header-inner {flex-wrap:wrap}
+  .dda-nav {order:3;width:100%;flex-wrap:wrap}
+  .dda-hero-grid {grid-template-columns:1fr}
+  .dda-dashboard-grid {grid-template-columns:repeat(2,1fr)}
+}
+
+@media(max-width:700px) {
+  .dda-hero {padding:50px 6%}
+  .dda-features {grid-template-columns:1fr}
+  .dda-ebook {grid-template-columns:1fr}
+  .dda-dashboard-grid {grid-template-columns:1fr 1fr}
+  .dda-section {padding:50px 6%}
+  .dda-footer-inner {grid-template-columns:1fr}
+  .dda-footer-inner small {grid-column:1}
+  .dda-header-actions {width:100%}
+}
