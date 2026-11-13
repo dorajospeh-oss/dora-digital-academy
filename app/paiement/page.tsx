@@ -1,91 +1,60 @@
 'use client'
-import {Suspense,useEffect,useState} from 'react'
+import {Suspense,useState} from 'react'
 import {useSearchParams} from 'next/navigation'
 import Link from 'next/link'
-import {supabase} from '../../lib/supabase'
-const methods=[['orange_money','Orange Money'],['airtel_money','Airtel Money'],['moov_money','Moov Money'],['visa','Visa'],['mastercard','Mastercard']] as const
+
+const methods=[['orange','Orange Money'],['airtel','Airtel Money']] as const
 function PaymentContent(){
  const params=useSearchParams()
- const orderId=params.get('order')
- const [method,setMethod]=useState('orange_money')
- const [payment,setPayment]=useState<any>(null)
- const [status,setStatus]=useState<any>(null)
- const [busy,setBusy]=useState(false)
- const [loading,setLoading]=useState(true)
- const [message,setMessage]=useState('')
+ const productId=params.get('product')
+ const [method,setMethod]=useState<'orange'|'airtel'>('orange')
  const [fullName,setFullName]=useState('')
  const [email,setEmail]=useState('')
  const [phone,setPhone]=useState('')
- async function refresh(){
-  if(!orderId)return
-  const {data,error}=await supabase().rpc('get_my_order_status',{p_order_id:orderId})
-  if(error)setMessage(error.message);else setStatus(data)
- }
- useEffect(()=>{
-  let active=true
-  async function load(){
-   const client=supabase()
-   const {data:{user}}=await client.auth.getUser()
-   if(!active)return
-   if(user){
-    setEmail(user.email||'')
-    const {data:profile}=await client.from('profiles').select('full_name,phone').eq('id',user.id).maybeSingle()
-    if(active){setFullName(profile?.full_name||String(user.user_metadata?.full_name||''));setPhone(profile?.phone||'')}
-   }
-   if(orderId)await refresh()
-   if(active)setLoading(false)
-  }
-  load()
-  return()=>{active=false}
- },[orderId])
- useEffect(()=>{if(!orderId)return;const t=setInterval(refresh,10000);return()=>clearInterval(t)},[orderId])
+ const [busy,setBusy]=useState(false)
+ const [message,setMessage]=useState('')
+ const [result,setResult]=useState<any>(null)
  async function start(){
-  if(!orderId)return setMessage('Commande introuvable.')
+  if(!productId)return setMessage('Produit introuvable. Retournez à la boutique.')
   if(!fullName.trim())return setMessage('Veuillez renseigner votre nom complet.')
-  if(!email.trim()||!/^\S+@\S+\.\S+$/.test(email))return setMessage('Veuillez vérifier votre adresse e-mail.')
-  if(!phone.trim()||phone.trim().replace(/[\s()+-]/g,'').length<8)return setMessage('Veuillez saisir un numéro de téléphone valide.')
-  setBusy(true);setMessage('')
-  const client=supabase()
-  const {data:{user}}=await client.auth.getUser()
-  if(!user){setMessage('Votre session a expiré. Reconnectez-vous.');setBusy(false);return}
-  const {error:profileError}=await client.from('profiles').update({full_name:fullName.trim(),phone:phone.trim()}).eq('id',user.id)
-  if(profileError){setMessage('Impossible d’enregistrer vos coordonnées : '+profileError.message);setBusy(false);return}
-  const {data,error}=await client.rpc('start_payment',{p_order_id:orderId,p_provider:method,p_payment_method:method})
-  if(error)setMessage(error.message);else setPayment(data)
-  setBusy(false);await refresh()
+  if(!email.trim()||!/^\\S+@\\S+\\.\\S+$/.test(email))return setMessage('Veuillez saisir une adresse e-mail valide pour recevoir votre eBook.')
+  if(!phone.trim())return setMessage('Veuillez saisir le numéro associé à votre compte Mobile Money.')
+  setBusy(true);setMessage('');setResult(null)
+  try{
+   const response=await fetch('/api/guest-checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({product_id:productId,provider:method,email:email.trim(),phone:phone.trim(),full_name:fullName.trim()})})
+   const data=await response.json()
+   if(!response.ok)throw new Error(data.error||'Impossible de préparer le paiement.')
+   setResult(data)
+   if(data.checkout_url)window.location.assign(data.checkout_url)
+   else setMessage(data.message||'Demande envoyée. Consultez votre téléphone pour la suite du paiement.')
+  }catch(error){setMessage(error instanceof Error?error.message:'Une erreur est survenue.')}
+  finally{setBusy(false)}
  }
  return <main className="container" style={{maxWidth:760,paddingTop:40,paddingBottom:80}}>
-  <span className="eyebrow">COMMANDE</span><h1>Paiement sécurisé</h1>
-  <p>Référence : <strong>{status?.order?.order_number||orderId||'—'}</strong></p>
+  <span className="eyebrow">ACHAT SANS COMPTE</span><h1>Finaliser votre achat</h1>
+  <p>Vous pouvez acheter cet eBook sans créer de compte ni vous abonner à la plateforme.</p>
   <section className="card" style={{marginTop:24}}>
-   <h2>Informations du client</h2>
-   {loading?<p className="muted">Chargement de vos coordonnées…</p>:<>
-    <label style={{display:'grid',gap:6,marginTop:14}}>Nom et prénom
-     <input value={fullName} onChange={e=>setFullName(e.target.value)} autoComplete="name" placeholder="Votre nom complet" required/>
-    </label>
-    <label style={{display:'grid',gap:6,marginTop:14}}>Adresse e-mail
-     <input type="email" value={email} readOnly autoComplete="email" aria-readonly="true"/>
-     <small className="muted">Adresse liée à votre compte DORA DIGITAL ACADEMY.</small>
-    </label>
-    <label style={{display:'grid',gap:6,marginTop:14}}>Numéro de téléphone
-     <input type="tel" value={phone} onChange={e=>setPhone(e.target.value)} autoComplete="tel" placeholder="Ex. +235 XX XX XX XX" required/>
-     <small className="muted">Pour Mobile Money, indiquez le numéro associé à votre compte de paiement.</small>
-    </label>
-   </>}
-  </section>
-  <section className="card" style={{marginTop:20}}>
-   <h2>Récapitulatif de la commande</h2>
-   <p>Référence : <strong>{status?.order?.order_number||orderId||'—'}</strong></p>
-   <p>Montant total : <strong>{status?.order?.total_amount!=null?Number(status.order.total_amount).toLocaleString('fr-FR')+' '+(status.order.currency||'XAF'):'—'}</strong></p>
+   <h2>Vos coordonnées</h2>
+   <label style={{display:'grid',gap:6,marginTop:14}}>Nom et prénom
+    <input value={fullName} onChange={e=>setFullName(e.target.value)} autoComplete="name" placeholder="Votre nom complet" required/>
+   </label>
+   <label style={{display:'grid',gap:6,marginTop:14}}>Adresse e-mail
+    <input type="email" value={email} onChange={e=>setEmail(e.target.value)} autoComplete="email" placeholder="exemple@email.com" required/>
+    <small className="muted">Votre lien de téléchargement sera envoyé à cette adresse après confirmation du paiement.</small>
+   </label>
+   <label style={{display:'grid',gap:6,marginTop:14}}>Téléphone Mobile Money
+    <input type="tel" value={phone} onChange={e=>setPhone(e.target.value)} autoComplete="tel" placeholder="Ex. +235 XX XX XX XX" required/>
+    <small className="muted">Indiquez le numéro associé au compte Mobile Money utilisé pour payer, avec l’indicatif du pays.</small>
+   </label>
   </section>
   <section className="card" style={{marginTop:20}}>
    <h2>Moyen de paiement</h2>
    <div style={{display:'grid',gap:12,marginTop:16}}>{methods.map(([v,l])=><label key={v} style={{display:'flex',gap:10,alignItems:'center'}}><input type="radio" name="method" checked={method===v} onChange={()=>setMethod(v)}/>{l}</label>)}</div>
-   <button onClick={start} disabled={busy||loading||!orderId} style={{marginTop:20}}>{busy?'Préparation…':'Continuer vers le paiement'}</button>
-   {message&&<p className="notice" style={{marginTop:14}}>{message}</p>}
+   <button onClick={start} disabled={busy||!productId} style={{marginTop:20}}>{busy?'Préparation…':'Continuer vers le paiement'}</button>
+   {message&&<p className="notice" role="alert" style={{marginTop:14}}>{message}</p>}
   </section>
-  {payment&&<section className="card" style={{marginTop:20}}><h2>Référence de paiement</h2><p><strong>{payment.transaction_reference}</strong></p><p>La transaction reste en attente jusqu’à confirmation du prestataire de paiement.</p></section>}
-  {status?.order&&<section className="card" style={{marginTop:20}}><h2>État</h2><p>Commande : <strong>{status.order.status}</strong></p><p>Paiement : <strong>{status.payment?.status||payment?.status||'—'}</strong></p>{status.order.status==='paid'?<><p>✓ Paiement confirmé. Vos accès sont disponibles.</p><Link className="btn" href="/compte">Accéder à mon espace</Link></>:<p>En attente de confirmation du prestataire de paiement.</p>}</section>}
+  {result&&<section className="card" style={{marginTop:20}}><h2>Commande préparée</h2><p>Référence : <strong>{result.order_number}</strong></p><p>Montant : <strong>{Number(result.amount).toLocaleString('fr-FR')} {result.currency}</strong></p><p>Un e-mail contenant votre lien de téléchargement sera envoyé après confirmation du paiement.</p></section>}
+  <p style={{marginTop:24}}><Link href="/boutique">← Retour à la boutique</Link></p>
  </main>
 }
 export default function PaiementPage(){return <Suspense fallback={<main className="container"><h1>Paiement sécurisé</h1><p className="muted">Chargement…</p></main>}><PaymentContent/></Suspense>}
