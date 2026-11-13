@@ -9,7 +9,7 @@ export default function Product(){
  const params=useParams<{slug:string}>()
  const [p,setP]=useState<any>(); const [reviews,setReviews]=useState<any[]>([]); const [related,setRelated]=useState<any[]>([]); const [msg,setMsg]=useState('');
  useEffect(()=>{(async()=>{const s=supabase();const {data}=await s.from('products').select('*').eq('slug',params.slug).eq('status','published').single();setP(data);if(data){const r=await s.rpc('get_product_reviews',{p_product_id:data.id});setReviews(r.data||[]);const q=await s.rpc('search_catalog',{p_category_slug:null,p_item_type:'product',p_sort:'popular',p_limit:4,p_offset:0});setRelated((q.data||[]).filter((x:any)=>x.id!==data.id).slice(0,3))}})()},[params.slug])
- async function buy(){if(!p)return;const s=supabase();const {data:{user}}=await s.auth.getUser();if(!user){setMsg('Connectez-vous avant d’acheter.');return}const {data,error}=await s.rpc('create_product_order',{p_product_id:p.id});if(error){setMsg(error.message);return}const orderId=typeof data==='string'?data:data?.id;if(!orderId){setMsg('La commande a été créée, mais son identifiant est introuvable.');return}window.location.href=`/paiement?order=${encodeURIComponent(orderId)}`}
+ async function buy(){if(!p)return;window.location.href=`/paiement?product=${encodeURIComponent(p.id)}`}
  if(!p)return <div className="notice">Chargement…</div>
  const price=Number(p.sale_price??p.price),old=p.sale_price?Number(p.price):null
  return <article>
