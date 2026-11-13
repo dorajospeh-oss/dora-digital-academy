@@ -2,8 +2,8 @@
 import {useEffect,useState} from 'react'
 import {supabase} from '../../lib/supabase'
 
-type Tab='overview'|'products'|'categories'|'orders'|'coupons'|'courses'|'certificates'
-const tabs:[Tab,string][]=[['overview','Vue générale'],['products','Produits'],['categories','Catégories'],['orders','Commandes'],['coupons','Coupons'],['courses','Formations'],['certificates','Certificats']]
+type Tab='overview'|'products'|'categories'|'orders'|'customers'|'coupons'|'courses'|'certificates'
+const tabs:[Tab,string][]=[['overview','Vue générale'],['products','Produits'],['categories','Catégories'],['orders','Commandes'],['customers','Clients'],['coupons','Coupons'],['courses','Formations'],['certificates','Certificats']]
 
 export default function Admin(){
  const [data,setData]=useState<any>({}); const [tab,setTab]=useState<Tab>('overview'); const [msg,setMsg]=useState(''); const [loading,setLoading]=useState(true); const [query,setQuery]=useState('')
@@ -14,7 +14,7 @@ export default function Admin(){
  return <div><div className="admin-head"><div><h1>Administration</h1><p className="muted">DORA DIGITAL ACADEMY · Console de gestion</p></div><button className="btn" onClick={load}>Actualiser</button></div>
  {msg&&<div className="notice">{msg}</div>}
  <div className="admin-toolbar"><input aria-label="Rechercher dans l’administration" placeholder="Rechercher…" value={query} onChange={e=>setQuery(e.target.value)} /><span className="admin-secure">● Sécurisé · RLS actif</span></div><div className="admin-tabs">{tabs.map(([id,label])=><button key={id} className={tab===id?'active':''} onClick={()=>setTab(id)}>{label}</button>)}</div>
- {tab==='overview'&&<Overview data={data}/>} {tab==='products'&&<Products data={data.products||[]} categories={data.categories||[]} act={act} query={query}/>} {tab==='categories'&&<Categories data={data.categories||[]} act={act} query={query}/>} {tab==='orders'&&<Orders data={data.orders||[]} act={act} query={query}/>} {tab==='coupons'&&<Coupons data={data.coupons||[]} act={act} query={query}/>} {tab==='courses'&&<Courses data={data.courses||[]} act={act} query={query}/>} {tab==='certificates'&&<Certificates data={data.certificates||[]} act={act} query={query}/>}</div>
+ {tab==='overview'&&<Overview data={data}/>} {tab==='products'&&<Products data={data.products||[]} categories={data.categories||[]} act={act} query={query}/>} {tab==='categories'&&<Categories data={data.categories||[]} act={act} query={query}/>} {tab==='orders'&&<Orders data={data.orders||[]} act={act} query={query}/>} {tab==='customers'&&<Customers data={data.customers||[]} query={query}/>} {tab==='coupons'&&<Coupons data={data.coupons||[]} act={act} query={query}/>} {tab==='courses'&&<Courses data={data.courses||[]} act={act} query={query}/>} {tab==='certificates'&&<Certificates data={data.certificates||[]} act={act} query={query}/>}</div>
 }
 function Overview({data}:any){const cards=[['Produits',data.products?.length||0],['Catégories',data.categories?.length||0],['Commandes',data.orders?.length||0],['Clients',data.customers?.length||0],['Coupons',data.coupons?.length||0],['Formations',data.courses?.length||0],['Certificats',data.certificates?.length||0]];return <><div className="grid">{cards.map(([a,b])=><div className="card" key={a}><span className="muted">{a}</span><strong>{b}</strong></div>)}</div><div className="card admin-summary"><h2>Dernières commandes</h2><Table rows={data.orders||[]} cols={['order_number','full_name','total_amount','currency','status','created_at']}/></div></>}
 function Products({data,categories,act,query}:any){data=data.filter((r:any)=>matches(r,query));const [editing,setEditing]=useState<any>(null);return <><div className="card"><h2>{editing?'Modifier le produit':'Nouveau produit'}</h2><ProductForm value={editing} categories={categories} onSave={(v:any)=>{act('product_upsert',v);setEditing(null)}} onCancel={()=>setEditing(null)}/></div><div className="card"><h2>Catalogue</h2><Table rows={data} cols={['title','price','sale_price','currency','status','file_path']} actions={(r:any)=><button className="small-btn" onClick={()=>setEditing(r)}>Modifier</button>}/></div></>}
@@ -66,5 +66,6 @@ function Certificates({data,act,query}:any) {
     </div>
   );
 }
+function Customers({data,query}:any){const filtered=data.filter((r:any)=>matches(r,query));return <div className="card"><h2>Clients</h2><p className="muted">Consultation des comptes clients — aucune modification des profils depuis cet écran.</p><Table rows={filtered} cols={['full_name','phone','role','created_at']}/></div>}
 function matches(row:any,q:string){if(!q.trim())return true;return Object.values(row||{}).some(v=>String(v??'').toLowerCase().includes(q.toLowerCase()))}
 function Table({rows,cols,actions}:any){if(!rows.length)return <p className="muted">Aucune donnée.</p>;return <div className="table-wrap"><table><thead><tr>{cols.map((c:string)=><th key={c}>{c}</th>)}{actions&&<th>Action</th>}</tr></thead><tbody>{rows.map((r:any,i:number)=><tr key={r.id||i}>{cols.map((c:string)=><td key={c}>{typeof r[c]==='boolean'?(r[c]?'Oui':'Non'):String(r[c]??'—')}</td>)}{actions&&<td>{actions(r)}</td>}</tr>)}</tbody></table></div>}
