@@ -772,6 +772,50 @@ document.getElementById("closePasswordRecovery").addEventListener("click", funct
 
   showPurchase(product);
 });
+  async function monitorPaymentStatus(orderNumber) {
+    const startedAt = Date.now();
+    const maxWaitMs = 120000;
+    setPaymentMessage("Commande créée. En attente de la confirmation PayCentral…");
+
+    while (Date.now() - startedAt < maxWaitMs) {
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      try {
+        const { data, error } = await client.functions.invoke("check-payment-status", {
+          body: { order_number: orderNumber }
+        });
+        if (error) throw error;
+        if (!data || !data.ok) throw new Error(data?.error || "Vérification indisponible.");
+
+        if (data.order_status === "paid" && data.payment_status === "confirmed") {
+          setPaymentMessage(
+            data.email_sent
+              ? "Paiement confirmé ! Votre eBook a été envoyé par e-mail. Vérifiez votre boîte de réception et vos courriers indésirables."
+              : "Paiement confirmé ! La préparation de votre e-mail de téléchargement est en cours. Vérifiez votre boîte de réception dans quelques instants."
+          );
+          return;
+        }
+
+        if (["failed", "cancelled", "refunded"].includes(String(data.order_status).toLowerCase()) ||
+            ["failed", "cancelled", "refunded"].includes(String(data.payment_status).toLowerCase())) {
+          setPaymentMessage("Le paiement n'a pas été confirmé. Statut de la commande : " + data.order_status + ".");
+          return;
+        }
+
+        setPaymentMessage("Commande " + orderNumber + " — paiement " +
+          (data.payment_status || "en attente") +
+          ". Vérification automatique en cours…");
+      } catch (error) {
+        console.warn("Suivi du paiement :", error);
+        setPaymentMessage("Commande créée. La vérification automatique du paiement continue…");
+      }
+    }
+
+    setPaymentMessage(
+      "La commande " + orderNumber + " est toujours en attente de confirmation. " +
+      "Vous pouvez fermer cette fenêtre ; le lien sera envoyé automatiquement après confirmation du paiement."
+    );
+  }
+
   purchaseForm.addEventListener("submit",async function(event){
   event.preventDefault();
 
@@ -825,10 +869,11 @@ try {
  setPaymentMessage(
   "Votre commande " + data.order_number +
   " a bien été créée. Statut : " + data.status +
-  ". Après confirmation du paiement par PayCentral, votre lien de téléchargement sera envoyé à " +
-  email +
-  ". Pensez à vérifier votre boîte de réception et vos courriers indésirables."
+  ". Nous vérifions automatiquement la confirmation PayCentral et l'envoi de votre eBook à " +
+  email + "."
 );
+
+  monitorPaymentStatus(data.order_number);
 
   if (data.checkout_url && /^https:\/\//.test(data.checkout_url)) {
     setPaymentMessage("Ouverture de la page de paiement de test…");
