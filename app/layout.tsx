@@ -28,7 +28,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <header className="dda-site-header">
           <div className="dda-header-inner">
             <Link href="/" className="dda-brand">
-              <span className="dda-brand-mark">D</span>
+              <span className="dda-brand-mark" aria-hidden="true">D</span>
               <span className="dda-brand-copy">
                 <strong>DORA DIGITAL ACADEMY</strong>
                 <small>APPRENDRE • CRÉER • RÉUSSIR</small>
