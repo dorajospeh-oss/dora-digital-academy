@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 function isAllowedHost(host: string) {
   return host === 'dora-digital-academy-1mvr.vercel.app'
-    || /^dora-digital-academy-1mvr-[a-z0-9-]+-dorajospeh-oss\\.vercel\\.app$/.test(host)
+    || (host.startsWith('dora-digital-academy-1mvr-') && host.endsWith('-dorajospeh-oss.vercel.app'))
     || host === 'localhost'
 }
 
@@ -38,22 +38,20 @@ export async function POST(request: NextRequest) {
     'Content-Type': 'application/json',
     apikey: key,
   }
-  // A visitor without an account is intentionally sent as a guest.
-  // For authenticated buyers, forward only the user's access token.
-  if (/^Bearer\\s+\\S+$/i.test(authorization)) {
+
+  // Les visiteurs sans compte restent anonymes; un client connecté transmet son jeton utilisateur.
+  if (authorization.toLowerCase().startsWith('bearer ') && authorization.slice(7).trim()) {
     headers.Authorization = authorization
   }
 
   try {
-    const response = await fetch(
-      url.replace(/\\/$/, '') + '/functions/v1/create-payment',
-      {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(body),
-        cache: 'no-store',
-      }
-    )
+    const endpoint = (url.endsWith('/') ? url.slice(0, -1) : url) + '/functions/v1/create-payment'
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+      cache: 'no-store',
+    })
     const data = await response.json().catch(() => ({ error: 'Réponse de paiement illisible.' }))
     return NextResponse.json(data, { status: response.status })
   } catch {
