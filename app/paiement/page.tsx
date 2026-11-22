@@ -40,7 +40,10 @@ function PaymentContent(){
 
  async function startGuest(){
   if(!productId)return setMessage('Produit introuvable. Retournez à la boutique.')
-  if(!email.trim()||!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email))return setMessage('Veuillez saisir une adresse e-mail valide pour recevoir votre eBook.')
+  const cleanEmail=email.trim()
+  const atPosition=cleanEmail.indexOf('@')
+  const lastDot=cleanEmail.lastIndexOf('.')
+  if(!cleanEmail||cleanEmail.includes(' ')||atPosition<=0||lastDot<=atPosition+1||lastDot===cleanEmail.length-1)return setMessage('Veuillez saisir une adresse e-mail valide pour recevoir votre eBook.')
   if(!phone.trim())return setMessage('Veuillez saisir le numéro associé à votre compte Mobile Money.')
   setBusy(true);setMessage('');setResult(null)
   try{
