@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import GuestDownloadHandler from './GuestDownloadHandler'
 
 const formations = [
   {
@@ -54,6 +55,7 @@ const espaces = [
 export default function Home() {
   return (
     <div className="dda-home">
+      <GuestDownloadHandler />
 
       {/* ACCUEIL */}
       <section className="dda-hero" id="accueil">
