@@ -58,7 +58,7 @@ function PaymentContent(){
  useEffect(()=>{
   if(!orderId)return
   void refreshOrder()
-  const timer=setInterval(()=>void refreshOrder(),60000)
+  const timer=setInterval(()=>void refreshOrder(),90000)
   return ()=>clearInterval(timer)
  },[orderId])
 
@@ -84,6 +84,7 @@ function PaymentContent(){
    if(session?.access_token)requestHeaders.Authorization='Bearer '+session.access_token
    const response=await fetch('/api/guest-checkout',{method:'POST',headers:requestHeaders,body:JSON.stringify({product_id:productId,provider:method,email:cleanEmail,phone:phone.trim(),checkout_request_id:checkoutRequestId})})
    const data=await response.json()
+   if(data.already_paid)sessionStorage.removeItem(requestKey)
    if(!response.ok){
     if(data.new_checkout_required){
      sessionStorage.removeItem(requestKey)
