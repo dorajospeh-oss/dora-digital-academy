@@ -153,6 +153,7 @@ function PaymentContent(){
   return <main className="container" style={{maxWidth:760,paddingTop:40,paddingBottom:80}}>
    <span className="eyebrow">ACHAT SANS COMPTE</span><h1>Finaliser votre achat</h1>
    <p>Vous pouvez acheter cet eBook sans créer de compte ni vous abonner à la plateforme.</p>
+   <p className="notice" role="status" style={{marginTop:14}}>⚠️ PayCentral est actuellement en mode simulation. Les paiements affichés ici sont des tests : aucun paiement réel n'est encaissé et aucun achat réel ne doit être promis avant l'ouverture officielle des opérateurs.</p>
    <section className="card" style={{marginTop:24}}>
     <h2>Vos coordonnées</h2>
     <label style={{display:'grid',gap:6,marginTop:14}}>Adresse e-mail
@@ -181,6 +182,7 @@ function PaymentContent(){
  if(orderId){
   return <main className="container" style={{maxWidth:760,paddingTop:40,paddingBottom:80}}>
    <span className="eyebrow">COMMANDE CLIENT</span><h1>Paiement sécurisé</h1>
+   <p className="notice" role="status" style={{marginTop:14}}>⚠️ PayCentral est actuellement en mode simulation. Les paiements affichés ici sont des tests : aucun paiement réel n'est encaissé et aucun achat réel ne doit être promis avant l'ouverture officielle des opérateurs.</p>
    <p>Référence : <strong>{status?.order?.order_number||orderId}</strong></p>
    <section className="card" style={{marginTop:24}}>
     <h2>Moyen de paiement</h2>
