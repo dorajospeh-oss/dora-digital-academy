@@ -54,3 +54,4 @@ jobs:
           deno check --no-lock supabase/functions/payment-webhook/index.ts
           deno check --no-lock supabase/functions/start-account-payment/index.ts
           deno check --no-lock supabase/functions/check-account-payment-status/index.ts
+          deno check --no-lock supabase/functions/check-guest-payment-status/index.ts
