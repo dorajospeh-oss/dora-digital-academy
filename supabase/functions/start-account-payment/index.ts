@@ -157,7 +157,35 @@ Deno.serve(async (req: Request) => {
     console.error("Account order lookup failed:", orderError?.message ?? "order not found");
     return json({ error: "Commande introuvable pour ce compte." }, 404, origin);
   }
-  if (!["pending", "failed", "cancelled"].includes(String(order.status))) {
+  if (["failed", "cancelled"].includes(String(order.status))) {
+    // start_payment() creates a replacement attempt only after the late-success
+    // protection window has passed (or the old attempt never reached PayCentral).
+    const { data: reopenedOrder, error: reopenError } = await admin
+      .from("orders")
+      .update({ status: "pending" })
+      .eq("id", orderId)
+      .eq("user_id", user.id)
+      .eq("status", order.status)
+      .select("id,order_number,user_id,total_amount,currency,status,buyer_email,buyer_phone")
+      .maybeSingle();
+
+    if (reopenError || !reopenedOrder) {
+      const { data: latestOrder } = await admin
+        .from("orders")
+        .select("status")
+        .eq("id", orderId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (latestOrder?.status !== "pending") {
+        return json({ error: "La commande a changé d'état. Actualisez la page avant de payer." }, 409, origin);
+      }
+      order.status = "pending";
+    } else {
+      Object.assign(order, reopenedOrder);
+    }
+  }
+
+  if (order.status !== "pending") {
     return json({ error: "Cette commande n'est pas payable." }, 409, origin);
   }
 
