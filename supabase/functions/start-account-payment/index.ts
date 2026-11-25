@@ -301,7 +301,12 @@ Deno.serve(async (req: Request) => {
   const duplicateAccepted = gatewayResponse.status === 409
     && Boolean(transactionId)
     && ["pending", "processing", "success", "succeeded", "paid", "completed"].includes(gatewayStatus);
-  const gatewayAccepted = (gatewayResponse.ok && gatewayBody.success === true && Boolean(transactionId)) || duplicateAccepted;
+  const idempotentReplay = gatewayResponse.status === 200
+    && gatewayBody.idempotent_replay === true
+    && Boolean(transactionId);
+  const gatewayAccepted = (gatewayResponse.ok && gatewayBody.success === true && Boolean(transactionId))
+    || duplicateAccepted
+    || idempotentReplay;
 
   if (!gatewayAccepted) {
     const gatewayMessage = safeMessage(gatewayBody.message, "PayCentral n'a pas pu initier le paiement.");
