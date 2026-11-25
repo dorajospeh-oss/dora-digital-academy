@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import GuestDownloadHandler from './GuestDownloadHandler'
 
 const formations = [
   {
@@ -54,6 +55,7 @@ const espaces = [
 export default function Home() {
   return (
     <div className="dda-home">
+      <GuestDownloadHandler />
 
       {/* ACCUEIL */}
       <section className="dda-hero" id="accueil">
@@ -177,35 +179,6 @@ export default function Home() {
             </div>
 
           </div>
-        </div>
-      </section>
-
-      {/* BOUTIQUE */}
-      <section className="dda-section dda-store" id="boutique">
-        <div className="dda-container">
-
-          <div className="dda-section-title">
-            <h2>Boutique d'eBooks</h2>
-            <p>
-              Découvrez nos livres numériques et nos ressources pratiques.
-            </p>
-          </div>
-
-          <div className="dda-store-box">
-            <div className="dda-store-icon">📚</div>
-
-            <h3>Votre bibliothèque numérique</h3>
-
-            <p>
-              Retrouvez nos ressources, consultez les descriptions
-              et découvrez les produits disponibles.
-            </p>
-
-            <Link href="/boutique" className="dda-btn dda-btn-primary">
-              Accéder à la boutique
-            </Link>
-          </div>
-
         </div>
       </section>
 
