@@ -72,7 +72,7 @@ Deno.serve(async (req: Request) => {
   }
 
   const authorization = req.headers.get("authorization") ?? "";
-  const bearerMatch = authorization.match(/^Bearer\\s+(.+)$/i);
+  const bearerMatch = authorization.match(/^Bearer\s+(.+)$/i);
   const bearer = bearerMatch?.[1]?.trim() ?? "";
   if (!bearer) return json({ error: "Connectez-vous avec le compte ayant passé la commande." }, 401, origin);
 
@@ -93,8 +93,8 @@ Deno.serve(async (req: Request) => {
     return json({ error: "Choisissez Orange Money, Airtel Money ou Moov Money." }, 400, origin);
   }
 
-  const normalizedPhone = rawPhone.replace(/[\\s().-]/g, "");
-  if (!/^\\+[1-9][0-9]{7,14}$/.test(normalizedPhone)) {
+  const normalizedPhone = rawPhone.replace(/[\s().-]/g, "");
+  if (!/^\+[1-9][0-9]{7,14}$/.test(normalizedPhone)) {
     return json({ error: "Entrez un numéro Mobile Money au format international, avec + et l'indicatif du pays." }, 400, origin);
   }
 
