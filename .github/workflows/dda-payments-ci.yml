@@ -1,0 +1,50 @@
+name: DDA Payments CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches:
+      - integration/nkap-monerails-no-ui-change
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  preserve-interface:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate original page script and gateway options
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const html = fs.readFileSync('index.html', 'utf8');
+          const match = html.match(/<script>\s*(\(function \(\) \{[\s\S]*?\}\)\(\);)\s*<\/script>/);
+          if (!match) throw new Error('Inline application script not found');
+          new Function(match[1]);
+          for (const value of ['orange', 'airtel', 'nkap', 'monerails_airtel', 'monerails_moov']) {
+            if (!html.includes('value="' + value + '"')) throw new Error('Missing gateway option: ' + value);
+          }
+          if (!html.includes('id="guestDownloadPanel"')) throw new Error('Original download panel was removed');
+          console.log('PASS: original page remains intact; inline script parses; gateway options are present.');
+          NODE
+
+  edge-functions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type-check payment Edge Functions
+        run: |
+          deno check --no-lock supabase/functions/create-alternate-payment/index.ts
+          deno check --no-lock supabase/functions/authorize-monerails-payment/index.ts
+          deno check --no-lock supabase/functions/check-alternate-payment-status/index.ts
+          deno check --no-lock supabase/functions/nkap-webhook/index.ts
+          deno check --no-lock supabase/functions/monerails-webhook/index.ts
