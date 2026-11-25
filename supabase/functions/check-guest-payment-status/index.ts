@@ -50,6 +50,42 @@ function providerName(provider: string) {
   return p;
 }
 
+async function getGuestDownloadUrl(admin: any, orderId: string, orderNumber: string) {
+  if (!GUEST_TOKEN_ENCRYPTION_KEY) return null;
+
+  const { data: tokenRow, error } = await admin
+    .from("guest_order_tokens")
+    .select("encrypted_token,encryption_iv,expires_at,download_count,max_downloads,revoked_at")
+    .eq("order_id", orderId)
+    .is("revoked_at", null)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !tokenRow || tokenRow.revoked_at) return null;
+  if (tokenRow.expires_at && Date.parse(String(tokenRow.expires_at)) <= Date.now()) return null;
+  if (Number(tokenRow.max_downloads) !== -1
+    && Number(tokenRow.download_count) >= Number(tokenRow.max_downloads)) return null;
+
+  try {
+    const keyBytes = Uint8Array.from(atob(GUEST_TOKEN_ENCRYPTION_KEY), c => c.charCodeAt(0));
+    if (keyBytes.length !== 32) throw new Error("Invalid guest encryption key");
+    const aesKey = await crypto.subtle.importKey("raw", keyBytes, "AES-GCM", false, ["decrypt"]);
+    const b64 = (value: unknown) => Uint8Array.from(atob(String(value)), c => c.charCodeAt(0));
+    const plain = await crypto.subtle.decrypt(
+      { name: "AES-GCM", iv: b64(tokenRow.encryption_iv) },
+      aesKey,
+      b64(tokenRow.encrypted_token)
+    );
+    const token = new TextDecoder().decode(plain);
+    return "https://" + PRODUCTION_HOST + "/?download=guest&order=" +
+      encodeURIComponent(orderNumber) + "&token=" + encodeURIComponent(token);
+  } catch (error) {
+    console.error("Guest download link recovery failed:", error instanceof Error ? error.message : "unknown error");
+    return null;
+  }
+}
+
 async function deliverGuestEmail(admin: any, orderId: string) {
   if (!BREVO_API_KEY || !BREVO_SENDER_EMAIL || !GUEST_TOKEN_ENCRYPTION_KEY) {
     return { sent: false, reason: "delivery_secrets_missing" };
@@ -191,13 +227,19 @@ Deno.serve(async (req: Request) => {
 
   if (paymentStatus === "confirmed" || orderStatus === "paid") {
     const email = await deliverGuestEmail(admin, String(order.id));
+    const downloadUrl = await getGuestDownloadUrl(admin, String(order.id), String(order.order_number));
     return json({
       ok: true,
       order_number: order.order_number,
       order_status: "paid",
       payment_status: "confirmed",
       email_sent: email.sent,
-      message: email.sent ? "Paiement confirmé et lien de téléchargement envoyé." : "Paiement confirmé. La livraison par e-mail est en cours de vérification."
+      download_url: downloadUrl,
+      message: downloadUrl
+        ? "Paiement confirmé. Votre lien personnel de téléchargement est disponible."
+        : email.sent
+          ? "Paiement confirmé et lien de téléchargement envoyé."
+          : "Paiement confirmé. La livraison par e-mail est en cours de vérification."
     }, 200, origin);
   }
 
@@ -318,9 +360,11 @@ Deno.serve(async (req: Request) => {
   paymentStatus = String(latestPayment?.status ?? applied?.status ?? paymentStatus);
 
   let emailSent = false;
+  let downloadUrl: string | null = null;
   if (confirmed && paymentStatus === "confirmed") {
     const delivery = await deliverGuestEmail(admin, String(order.id));
     emailSent = delivery.sent;
+    downloadUrl = await getGuestDownloadUrl(admin, String(order.id), String(order.order_number));
   }
 
   return json({
@@ -329,8 +373,13 @@ Deno.serve(async (req: Request) => {
     order_status: orderStatus,
     payment_status: paymentStatus,
     email_sent: emailSent,
+    download_url: downloadUrl,
     message: confirmed
-      ? emailSent ? "Paiement confirmé et lien de téléchargement envoyé." : "Paiement confirmé. La livraison par e-mail est en cours de vérification."
+      ? downloadUrl
+        ? "Paiement confirmé. Votre lien personnel de téléchargement est disponible."
+        : emailSent
+          ? "Paiement confirmé et lien de téléchargement envoyé."
+          : "Paiement confirmé. La livraison par e-mail est en cours de vérification."
       : status === "cancelled" ? "Le paiement a été annulé." : "Le prestataire a signalé un échec de paiement."
   }, 200, origin);
 });
