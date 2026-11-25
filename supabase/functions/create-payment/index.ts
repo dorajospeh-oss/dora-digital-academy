@@ -367,7 +367,7 @@ Deno.serve(async (req: Request) => {
     if (itemError) {
       await admin.from("orders").update({ status: "cancelled" }).eq("id", newOrder.id);
       console.error("Guest order item creation failed:", itemError.message);
-      return json({ error: "Impossible de préparer l'article de cette commande." }, 500, origin);
+      return json({ error: "Impossible de préparer l'article de cette commande.", new_checkout_required: true }, 500, origin);
     }
 
     const internalReference = "DDA-PAY-" + crypto.randomUUID().replaceAll("-", "").slice(0, 16).toUpperCase();
@@ -386,7 +386,7 @@ Deno.serve(async (req: Request) => {
     if (paymentError || !newPayment) {
       await admin.from("orders").update({ status: "cancelled" }).eq("id", newOrder.id);
       console.error("Guest payment creation failed:", paymentError?.message);
-      return json({ error: "Impossible de préparer le paiement." }, 500, origin);
+      return json({ error: "Impossible de préparer le paiement.", new_checkout_required: true }, 500, origin);
     }
     payment = newPayment;
 
@@ -396,7 +396,7 @@ Deno.serve(async (req: Request) => {
       await admin.from("orders").update({ status: "cancelled" }).eq("id", newOrder.id);
       await admin.from("payments").update({ status: "failed" }).eq("id", newPayment.id);
       console.error("Guest access setup failed:", error instanceof Error ? error.message : "unknown error");
-      return json({ error: "Impossible de sécuriser l'accès à votre achat. Aucun paiement n'a été lancé." }, 500, origin);
+      return json({ error: "Impossible de sécuriser l'accès à votre achat. Aucun paiement n'a été lancé.", new_checkout_required: true }, 500, origin);
     }
   }
 
