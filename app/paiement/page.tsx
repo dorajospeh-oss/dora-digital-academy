@@ -4,7 +4,7 @@ import {useSearchParams} from 'next/navigation'
 import Link from 'next/link'
 import {supabase} from '../../lib/supabase'
 
-const guestMethods=[['orange','Orange Money'],['airtel','Airtel Money']] as const
+const guestMethods=[['orange','Orange Money'],['airtel','Airtel Money'],['moov','Moov Money']] as const
 const accountMethods=[['orange_money','Orange Money'],['airtel_money','Airtel Money'],['moov_money','Moov Money']] as const
 
 function PaymentContent(){
@@ -13,7 +13,7 @@ function PaymentContent(){
  const orderId=params.get('order')
  const isGuestCheckout=Boolean(productId)&&!orderId
 
- const [method,setMethod]=useState<'orange'|'airtel'>('orange')
+ const [method,setMethod]=useState<'orange'|'airtel'|'moov'>('orange')
  const [email,setEmail]=useState('')
  const [phone,setPhone]=useState('')
  const [busy,setBusy]=useState(false)
