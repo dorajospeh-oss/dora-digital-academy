@@ -290,7 +290,6 @@ Deno.serve(async (req: Request) => {
         provider,
         description: "DORA DIGITAL ACADEMY — " + String(order.order_number).slice(0, 80),
         merchant_reference: merchantReference,
-        callback_url: CALLBACK_URL,
         expires_in: 60,
         metadata: {
           order_id: orderId,
