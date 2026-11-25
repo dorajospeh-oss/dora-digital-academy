@@ -78,6 +78,8 @@ Pour le Tchad, la documentation Monerails mentionne les numéros de test suivant
 - `+23500000002` : scénario restant en attente
 - `+23500000003` : scénario d'échec
 
+Ces numéros sont réservés au bac à sable : les transactions de test n'atteignent pas un véritable opérateur ni un portefeuille réel. Les autres numéros peuvent être refusés en mode test par `test_phone_required`.
+
 1. Choisir Monerails — Airtel Money ou Monerails — Moov Money.
 2. Utiliser un numéro de test approprié.
 3. Valider la demande sur le téléphone de test ou renseigner l'OTP si l'API retourne `requires_otp`.
