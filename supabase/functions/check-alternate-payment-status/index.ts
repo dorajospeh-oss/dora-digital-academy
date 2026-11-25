@@ -245,9 +245,12 @@ Deno.serve(async (req: Request) => {
   const expectedGatewayAmount = payment.provider === "nkap"
     ? Number(stored.gateway_amount ?? payment.amount)
     : Number(payment.amount);
+  const returnedOperator = String(data.operator ?? "").toUpperCase();
+  const expectedOperator = String(payment.payment_method ?? "").toUpperCase();
   if (returnedMerchantReference !== String(payment.transaction_reference)
     || !Number.isFinite(gatewayAmount) || gatewayAmount !== expectedGatewayAmount
-    || gatewayCurrency !== String(payment.currency).toUpperCase()) {
+    || gatewayCurrency !== String(payment.currency).toUpperCase()
+    || (payment.provider === "monerails" && returnedOperator !== expectedOperator)) {
     return json({ error: "Montant, devise ou référence marchand non conforme. Aucun accès ne sera délivré." }, 409, origin);
   }
 
