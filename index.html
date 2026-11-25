@@ -303,6 +303,9 @@
     <select id="paymentProvider" required>
       <option value="orange">Orange Money</option>
       <option value="airtel">Airtel Money</option>
+      <option value="nkap">Nkap Pay</option>
+      <option value="monerails_airtel">Monerails — Airtel Money</option>
+      <option value="monerails_moov">Monerails — Moov Money</option>
     </select>
   </div>
 
@@ -352,6 +355,15 @@
   let selectedProduct = null;
   let pendingProduct = null;
   let client = null;
+
+  const providerSelect = document.getElementById("paymentProvider");
+  const phoneInput = document.getElementById("paymentPhone");
+  providerSelect.addEventListener("change", function () {
+    // Nkap's hosted checkout in Chad collects the operator and phone itself.
+    // Keep the existing field in place; only its validation changes.
+    phoneInput.required = providerSelect.value !== "nkap";
+  });
+  phoneInput.required = providerSelect.value !== "nkap";
 
   function escapeHtml(value) {
     return String(value == null ? "" : value).replace(/[&<>"']/g, function (ch) {
@@ -458,6 +470,101 @@
   setPaymentMessage("Mode test uniquement. Aucun paiement réel ne doit être débité.");
   purchaseDialog.showModal();
 }
+async function pollAlternatePayment(orderNumber, email, statusElement) {
+  let attempt = 0;
+  const maxAttempts = 60;
+  const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+  while (attempt < maxAttempts) {
+    attempt++;
+    try {
+      const { data, error } = await client.functions.invoke("check-alternate-payment-status", {
+        body: { order_number: orderNumber, email: email }
+      });
+      if (error) throw error;
+
+      if (data && data.payment_status === "confirmed") {
+        statusElement.textContent = data.email_sent
+          ? "Paiement confirmé. Votre e-mail de téléchargement a été envoyé. "
+          : "Paiement confirmé. Votre achat est prêt. ";
+        if (data.download_url) {
+          const link = document.createElement("a");
+          link.href = data.download_url;
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          link.textContent = "Télécharger mon eBook";
+          link.className = "btn";
+          statusElement.appendChild(link);
+        }
+        sessionStorage.removeItem("dda_alt_order_" + orderNumber);
+        const requestKey = sessionStorage.getItem("dda_alt_request_" + orderNumber);
+        if (requestKey) {
+          sessionStorage.removeItem(requestKey);
+          sessionStorage.removeItem("dda_alt_request_" + orderNumber);
+        }
+        const session = await getSession().catch(() => null);
+        if (session) await refreshPurchases().catch(() => null);
+        return true;
+      }
+
+      if (data && ["failed", "expired", "cancelled"].includes(String(data.payment_status || "").toLowerCase())) {
+        statusElement.textContent = "La passerelle a signalé un échec ou une expiration. Vous pouvez relancer votre achat depuis la boutique.";
+        const requestKey = sessionStorage.getItem("dda_alt_request_" + orderNumber);
+        if (requestKey) {
+          sessionStorage.removeItem(requestKey);
+          sessionStorage.removeItem("dda_alt_request_" + orderNumber);
+        }
+        sessionStorage.removeItem("dda_alt_order_" + orderNumber);
+        return false;
+      }
+
+      statusElement.textContent = (data && data.message)
+        ? data.message
+        : "Paiement en attente de confirmation. Vérification automatique en cours…";
+    } catch (error) {
+      console.error("Suivi paiement Nkap/Monerails :", error);
+      statusElement.textContent = "Le paiement reste en attente. Nouvelle vérification automatique…";
+    }
+    await wait(8000);
+  }
+
+  statusElement.textContent = "Le statut n'a pas encore été confirmé. Votre commande reste enregistrée. Actualisez la page dans quelques instants pour vérifier à nouveau.";
+  return false;
+}
+
+async function handleAlternatePaymentReturn() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("payment_return") !== "1") return;
+
+  const orderNumber = String(params.get("order") || "").trim().toUpperCase();
+  const panel = document.getElementById("guestDownloadPanel");
+  const status = document.getElementById("guestDownloadStatus");
+  if (!panel || !status) return;
+
+  panel.hidden = false;
+  panel.style.display = "block";
+  history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+
+  if (!/^DDA-[A-F0-9]{16}$/.test(orderNumber)) {
+    status.textContent = "Référence de retour de paiement invalide. Consultez votre commande ou contactez le support.";
+    return;
+  }
+
+  let email = sessionStorage.getItem("dda_alt_order_" + orderNumber) || "";
+  if (!email) {
+    email = window.prompt("Adresse e-mail utilisée pour cet achat :") || "";
+  }
+  email = email.trim().toLowerCase();
+  if (!email) {
+    status.textContent = "Saisissez l'adresse e-mail utilisée pour vérifier votre commande.";
+    return;
+  }
+
+  sessionStorage.setItem("dda_alt_order_" + orderNumber, email);
+  status.textContent = "Retour du prestataire reçu. Vérification du paiement…";
+  void pollAlternatePayment(orderNumber, email, status);
+}
+
  async function loadProducts(){
 
   if(!window.supabase || typeof window.supabase.createClient !== "function"){
@@ -492,6 +599,7 @@
   });
 
   await handleGuestDownload();
+  await handleAlternatePaymentReturn();
 
   // Chargement du catalogue
   const { data, error } = await client
@@ -774,75 +882,138 @@ document.getElementById("closePasswordRecovery").addEventListener("click", funct
 });
   purchaseForm.addEventListener("submit",async function(event){
   event.preventDefault();
+  if (!selectedProduct) return;
 
-if (!selectedProduct) return;
+  const email = document.getElementById("buyerEmail").value.trim().toLowerCase();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    setPaymentMessage("Veuillez saisir une adresse e-mail valide.");
+    return;
+  }
 
-const email = document.getElementById("buyerEmail").value.trim();
+  const provider = providerSelect.value;
+  const phone = phoneInput.value.trim();
+  const normalizedPhone = phone.replace(/[\s().-]/g, "");
+  const digits = normalizedPhone.startsWith("+") ? normalizedPhone.slice(1) : normalizedPhone;
+  const usesNkap = provider === "nkap";
+  const usesMonerails = provider === "monerails_airtel" || provider === "monerails_moov";
 
-if (!email) {
-  setPaymentMessage("Veuillez saisir votre adresse e-mail.");
-  return;
-}
-const phone = document.getElementById("paymentPhone").value.trim();
+  if (provider !== "orange" && provider !== "airtel" && !usesNkap && !usesMonerails) {
+    setPaymentMessage("Moyen de paiement non reconnu.");
+    return;
+  }
 
-const normalizedPhone = phone.replace(/[\s().-]/g, "");
-const digits = normalizedPhone.startsWith("+")
-  ? normalizedPhone.slice(1)
-  : normalizedPhone;
+  if (!usesNkap && (
+    !normalizedPhone.startsWith("+") ||
+    !/^[1-9][0-9]{7,14}$/.test(digits)
+  )) {
+    setPaymentMessage("Entrez un numéro Mobile Money au format international, avec + et l’indicatif du pays.");
+    return;
+  }
 
-if (
-  !normalizedPhone.startsWith("+") ||
-  !/^[1-9][0-9]{7,14}$/.test(digits)
-) {
-  setPaymentMessage(
-    "Entrez un numéro Mobile Money au format international, avec + et l’indicatif du pays."
-  );
-  return;
-}
+  const btn = document.getElementById("startPaymentBtn");
+  btn.disabled = true;
+  setPaymentMessage("Demande de paiement en cours…");
 
-const btn = document.getElementById("startPaymentBtn");
-btn.disabled = true;
-setPaymentMessage("Demande de paiement test en cours…");
+  try {
+    if (usesNkap || usesMonerails) {
+      const contactDigest = await crypto.subtle.digest(
+        "SHA-256",
+        new TextEncoder().encode(email + "|" + (usesNkap ? "" : normalizedPhone) + "|" + provider)
+      );
+      const contactHash = [...new Uint8Array(contactDigest)].map(b => b.toString(16).padStart(2, "0")).join("");
+      const requestKey = "dda_alt_checkout_" + selectedProduct.id + "_" + contactHash;
+      let checkoutRequestId = sessionStorage.getItem(requestKey);
+      if (!checkoutRequestId) {
+        checkoutRequestId = crypto.randomUUID();
+        sessionStorage.setItem(requestKey, checkoutRequestId);
+      }
 
-try {
-  const { data, error } = await client.functions.invoke("create-payment", {
-  body: {
-  product_id: selectedProduct.id,
-  provider: document.getElementById("paymentProvider").value,
-  phone: phone,
-  email: email
-}
-  });
+      const { data, error } = await client.functions.invoke("create-alternate-payment", {
+        body: {
+          product_id: selectedProduct.id,
+          provider,
+          phone: usesNkap ? "" : normalizedPhone,
+          email,
+          checkout_request_id: checkoutRequestId
+        }
+      });
 
-  if (error) throw error;
+      if (error) throw error;
+      if (!data || !data.ok) {
+        if (data && data.new_checkout_required) sessionStorage.removeItem(requestKey);
+        throw new Error(data?.error || "La passerelle n'a pas accepté le paiement.");
+      }
 
-  if (!data || !data.ok) {
-    throw new Error(
-      data?.error || "La demande de paiement a été refusée."
+      const orderNumber = String(data.order_number || "");
+      if (!/^DDA-[A-F0-9]{16}$/.test(orderNumber)) {
+        throw new Error("La passerelle n'a pas retourné une référence de commande valide.");
+      }
+      sessionStorage.setItem("dda_alt_order_" + orderNumber, email);
+      sessionStorage.setItem("dda_alt_request_" + orderNumber, requestKey);
+
+      const panel = document.getElementById("guestDownloadPanel");
+      const status = document.getElementById("guestDownloadStatus");
+      panel.hidden = false;
+      panel.style.display = "block";
+      status.textContent = data.message || "Demande de paiement transmise. En attente de confirmation.";
+
+      if (data.checkout_url && /^https:\/\//.test(data.checkout_url)) {
+        setPaymentMessage("Ouverture de la page sécurisée " + (usesNkap ? "Nkap Pay" : "Monerails") + "…");
+        window.location.assign(data.checkout_url);
+        return;
+      }
+
+      if (data.requires_otp) {
+        const code = window.prompt("Monerails a envoyé un code par SMS. Saisissez le code à 4–8 chiffres reçu sur votre téléphone :");
+        if (code) {
+          const { data: authorized, error: authorizeError } = await client.functions.invoke("authorize-monerails-payment", {
+            body: { order_number: orderNumber, email, code: code.trim() }
+          });
+          if (authorizeError) throw authorizeError;
+          if (!authorized || !authorized.ok) throw new Error(authorized?.error || "La validation du code a échoué.");
+          status.textContent = authorized.message || "Code accepté. Attendez la confirmation de l'opérateur.";
+        } else {
+          status.textContent = "La demande attend le code reçu par SMS. Vous pouvez revenir et relancer la validation sans recréer un achat.";
+        }
+      } else if (data.next_action && data.next_action.ussd_code) {
+        status.textContent = (data.next_action.message || data.message || "Validez le paiement sur votre téléphone.")
+          + " Code USSD de secours : " + data.next_action.ussd_code;
+      }
+
+      setPaymentMessage("Commande " + orderNumber + " enregistrée. Le suivi de la confirmation est automatique.");
+      void pollAlternatePayment(orderNumber, email, status);
+      return;
+    }
+
+    // Parcours PayCentral existant conservé.
+    const { data, error } = await client.functions.invoke("create-payment", {
+      body: {
+        product_id: selectedProduct.id,
+        provider,
+        phone,
+        email
+      }
+    });
+    if (error) throw error;
+    if (!data || !data.ok) throw new Error(data?.error || "La demande de paiement a été refusée.");
+
+    setPaymentMessage(
+      "Votre commande " + data.order_number +
+      " a bien été créée. Statut : " + data.status +
+      ". Après confirmation du paiement par PayCentral, votre lien de téléchargement sera envoyé à " +
+      email + ". Pensez à vérifier votre boîte de réception et vos courriers indésirables."
     );
-  }
 
- setPaymentMessage(
-  "Votre commande " + data.order_number +
-  " a bien été créée. Statut : " + data.status +
-  ". Après confirmation du paiement par PayCentral, votre lien de téléchargement sera envoyé à " +
-  email +
-  ". Pensez à vérifier votre boîte de réception et vos courriers indésirables."
-);
-
-  if (data.checkout_url && /^https:\/\//.test(data.checkout_url)) {
-    setPaymentMessage("Ouverture de la page de paiement de test…");
-    window.location.assign(data.checkout_url);
+    if (data.checkout_url && /^https:\/\//.test(data.checkout_url)) {
+      setPaymentMessage("Ouverture de la page de paiement de test…");
+      window.location.assign(data.checkout_url);
+    }
+  } catch (error) {
+    console.error("Paiement :", error);
+    setPaymentMessage(error?.message || "Impossible de lancer le paiement. Vérifiez la configuration serveur.");
+  } finally {
+    btn.disabled = false;
   }
-} catch (error) {
-  console.error("Paiement test:", error);
-  setPaymentMessage(
-    error?.message ||
-    "Impossible de lancer le paiement. Vérifiez la configuration serveur."
-  );
-} finally {
-  btn.disabled = false;
-}
 });
   document.getElementById("closePurchaseInfo").addEventListener("click",()=>purchaseDialog.close());
   document.getElementById("refreshAccount").addEventListener("click",()=>refreshPurchases().catch(e=>{console.error(e);accountStatus.textContent="Impossible de charger vos achats. Réessayez plus tard.";}));
