@@ -85,8 +85,8 @@ function PaymentContent(){
 
  async function startAccountPayment(){
   if(!orderId)return setMessage('Commande introuvable.')
-  const normalizedPhone=accountPhone.trim().replace(/[\\s().-]/g,'')
-  if(!/^\\+[1-9][0-9]{7,14}$/.test(normalizedPhone))return setMessage('Saisissez un numéro Mobile Money au format international, par exemple +23562123456.')
+  const normalizedPhone=accountPhone.trim().replace(/[\s().-]/g,'')
+  if(!/^\+[1-9][0-9]{7,14}$/.test(normalizedPhone))return setMessage('Saisissez un numéro Mobile Money au format international, par exemple +23562123456.')
   setBusy(true);setMessage('');setPayment(null)
   try{
    const {data:{session}}=await supabase().auth.getSession()
