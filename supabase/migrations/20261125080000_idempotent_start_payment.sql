@@ -30,13 +30,16 @@ BEGIN
     RAISE EXCEPTION 'Moyen de paiement incohérent';
   END IF;
 
-  -- Serializes payment-attempt creation for this order.
+  -- Serialize concurrent starts without SELECT FOR UPDATE. The orders table
+  -- intentionally has no client UPDATE policy; row locking would therefore
+  -- hide the row from this SECURITY INVOKER function under RLS.
+  PERFORM pg_advisory_xact_lock(hashtextextended(p_order_id::text, 0));
+
   SELECT *
   INTO v_order
   FROM public.orders
   WHERE id = p_order_id
-    AND user_id = v_user
-  FOR UPDATE;
+    AND user_id = v_user;
 
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Commande introuvable';
@@ -46,8 +49,9 @@ BEGIN
     RAISE EXCEPTION 'Commande non payable';
   END IF;
 
-  -- PayCentral can confirm a failed/expired transaction late (up to 24 hours).
-  -- Do not create a second charge while that confirmation window is open.
+  -- PayCentral allows a late success for 24 hours after expiry. With the
+  -- 60-minute payment expiry used by the Edge Function, keep the same order
+  -- closed to a new attempt for 25 hours after a failure/cancellation.
   IF v_order.status IN ('failed', 'cancelled') THEN
     SELECT *
     INTO v_payment
@@ -55,58 +59,25 @@ BEGIN
     WHERE order_id = v_order.id
       AND status IN ('failed', 'expired')
     ORDER BY created_at DESC
-    LIMIT 1
-    FOR UPDATE;
+    LIMIT 1;
 
-    IF FOUND AND v_payment.created_at > now() - interval '24 hours' THEN
+    IF FOUND AND v_payment.created_at > now() - interval '25 hours' THEN
       RAISE EXCEPTION 'Le paiement précédent peut encore être confirmé. Vérifiez son état avant une nouvelle tentative.';
     END IF;
-
-    UPDATE public.orders
-    SET status = 'pending',
-        updated_at = now()
-    WHERE id = v_order.id;
   END IF;
 
-  -- Reuse the active attempt. An already-started gateway request must not
-  -- silently switch operator while its result is still unknown.
   SELECT *
   INTO v_payment
   FROM public.payments
   WHERE order_id = v_order.id
     AND status = 'pending'
   ORDER BY created_at DESC
-  LIMIT 1
-  FOR UPDATE;
+  LIMIT 1;
 
   IF FOUND THEN
-    IF coalesce(v_payment.provider_response, '{}'::jsonb) ? 'transaction_id' THEN
-      IF v_payment.provider <> v_provider THEN
-        RAISE EXCEPTION 'Un paiement est déjà en cours avec un autre opérateur';
-      END IF;
-      RETURN v_payment;
-    END IF;
-
-    -- Keep the operator fixed once an attempt exists. Only legacy card rows
-    -- from the former non-connected UI are safe to convert: that UI never
-    -- transmitted those methods to a gateway.
     IF v_payment.provider <> v_provider THEN
-      IF v_payment.provider_response IS NULL
-         AND v_payment.provider IN ('visa', 'mastercard') THEN
-        UPDATE public.payments
-        SET provider = v_provider,
-            payment_method = v_method,
-            user_id = v_user,
-            amount = v_order.total_amount,
-            currency = v_order.currency,
-            updated_at = now()
-        WHERE id = v_payment.id
-        RETURNING * INTO v_payment;
-      ELSE
-        RAISE EXCEPTION 'Un paiement est déjà en cours avec un autre opérateur';
-      END IF;
+      RAISE EXCEPTION 'Un paiement est déjà en cours avec un autre opérateur';
     END IF;
-
     RETURN v_payment;
   END IF;
 
