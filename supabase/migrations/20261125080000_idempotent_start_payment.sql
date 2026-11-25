@@ -61,7 +61,9 @@ BEGIN
     ORDER BY created_at DESC
     LIMIT 1;
 
-    IF FOUND AND v_payment.created_at > now() - interval '25 hours' THEN
+    IF FOUND
+       AND v_payment.created_at > now() - interval '25 hours'
+       AND coalesce(v_payment.provider_response, '{}'::jsonb) ? 'transaction_id' THEN
       RAISE EXCEPTION 'Le paiement précédent peut encore être confirmé. Vérifiez son état avant une nouvelle tentative.';
     END IF;
   END IF;
