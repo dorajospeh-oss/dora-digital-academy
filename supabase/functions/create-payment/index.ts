@@ -405,12 +405,24 @@ Deno.serve(async (req: Request) => {
     });
     gatewayBody = await gatewayResponse.json().catch(() => ({})) as Record<string, unknown>;
   } catch (error) {
+    // A lost response does not prove PayCentral did not create the payment.
+    // Keep the order pending and allow a retry using this same reference/key.
     await admin.from("payments").update({
-      status: "failed",
-      provider_response: { gateway: "paycentral", transport_error: error instanceof Error ? error.message : "Network error" }
-    }).eq("id", payment.id);
-    await admin.from("orders").update({ status: "failed" }).eq("id", order.id);
-    return json({ error: "PayCentral ne répond pas. La commande a été marquée en échec." }, 502, origin);
+      provider_response: {
+        ...previousProviderResponse,
+        gateway: "paycentral",
+        environment: gatewayEnvironment,
+        merchant_reference: internalReference,
+        initiation_state: "unknown",
+        last_transport_error: error instanceof Error ? error.message : "Network error"
+      }
+    }).eq("id", payment.id).eq("status", "pending");
+    return json({
+      error: "PayCentral ne répond pas. La commande est conservée ; relancez la même demande sans recréer l'achat.",
+      retryable: true,
+      order_number: order.order_number,
+      transaction_reference: internalReference
+    }, 502, origin);
   }
 
   // PayCentral returns HTTP 201 for a new operation, HTTP 200 for an
