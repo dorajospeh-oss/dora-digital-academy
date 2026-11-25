@@ -419,13 +419,16 @@ Deno.serve(async (req: Request) => {
       signal: AbortSignal.timeout(15000)
     });
     const operatorBody = await operatorResponse.json().catch(() => ({})) as JsonObject;
+    const operatorData = object(operatorBody.data);
     const operatorList = Array.isArray(operatorBody.data)
       ? operatorBody.data
-      : Array.isArray(operatorBody.operators)
-        ? operatorBody.operators
-        : Array.isArray(operatorBody)
-          ? operatorBody
-          : [];
+      : Array.isArray(operatorData.operators)
+        ? operatorData.operators
+        : Array.isArray(operatorBody.operators)
+          ? operatorBody.operators
+          : Array.isArray(operatorBody)
+            ? operatorBody
+            : [];
     const operatorEntry = operatorList.find((entry: unknown) => String(object(entry).code ?? "").toUpperCase() === operator);
     if (!operatorResponse.ok || !operatorEntry || object(operatorEntry).available === false) {
       const message = safeError(operatorBody, operator + " n'est pas ouvert sur votre compte Monerails pour le Tchad.");
