@@ -104,7 +104,13 @@ Deno.serve(async (req: Request) => {
   const bearer = authorization.replace(/^Bearer\s+/i, "").trim();
   let userId: string | null = null;
   let buyerEmailFromAuth = "";
-  if (bearer && bearer !== ANON_KEY) {
+  let isPublicKey = bearer === ANON_KEY;
+  try {
+    const publishableKeys = JSON.parse(Deno.env.get("SUPABASE_PUBLISHABLE_KEYS") ?? "{}");
+    if (publishableKeys.default && bearer === publishableKeys.default) isPublicKey = true;
+  } catch { /* Legacy anon key remains supported. */ }
+
+  if (bearer && !isPublicKey) {
     const userClient = createClient(SUPABASE_URL, ANON_KEY, {
       global: { headers: { Authorization: "Bearer " + bearer } },
       auth: { persistSession: false, autoRefreshToken: false }
@@ -381,10 +387,17 @@ Deno.serve(async (req: Request) => {
         return json({ error: message, order_number: order.order_number, retryable: !definite, new_checkout_required: definite }, definite ? 422 : 502, origin);
       }
 
+      const gatewayAmount = Number(nkapData.amount ?? amount);
+      if (!Number.isFinite(gatewayAmount) || gatewayAmount < amount) {
+        return json({ error: "Le montant retourné par Nkap ne correspond pas à la commande." }, 409, origin);
+      }
       const stored = {
         gateway, environment, merchant_reference: internalReference,
-        gateway_reference: gatewayReference, payment_url: checkoutUrl,
-        status: gatewayStatus, provider_response: gatewayBody,
+        gateway_reference: gatewayReference, gateway_amount: gatewayAmount,
+        payment_url: checkoutUrl, status: gatewayStatus,
+        fee: nkapData.fee ?? null,
+        fee_bearer: nkapData.fee_bearer ?? null,
+        provider_response: gatewayBody,
         initiation_state: "initiated"
       };
       await admin.from("payments").update({ provider_response: stored }).eq("id", paymentId).eq("status", "pending");
@@ -406,8 +419,13 @@ Deno.serve(async (req: Request) => {
       signal: AbortSignal.timeout(15000)
     });
     const operatorBody = await operatorResponse.json().catch(() => ({})) as JsonObject;
-    const operatorData = object(operatorBody.data ?? operatorBody);
-    const operatorList = Array.isArray(operatorBody) ? operatorBody : Array.isArray(operatorData.operators) ? operatorData.operators : [];
+    const operatorList = Array.isArray(operatorBody.data)
+      ? operatorBody.data
+      : Array.isArray(operatorBody.operators)
+        ? operatorBody.operators
+        : Array.isArray(operatorBody)
+          ? operatorBody
+          : [];
     const operatorEntry = operatorList.find((entry: unknown) => String(object(entry).code ?? "").toUpperCase() === operator);
     if (!operatorResponse.ok || !operatorEntry || object(operatorEntry).available === false) {
       const message = safeError(operatorBody, operator + " n'est pas ouvert sur votre compte Monerails pour le Tchad.");
