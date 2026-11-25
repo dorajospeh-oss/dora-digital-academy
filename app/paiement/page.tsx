@@ -19,6 +19,7 @@ function PaymentContent(){
  const [busy,setBusy]=useState(false)
  const [message,setMessage]=useState('')
  const [result,setResult]=useState<any>(null)
+ const [guestStatus,setGuestStatus]=useState<any>(null)
  const [guestCanRestart,setGuestCanRestart]=useState(false)
 
  const [accountMethod,setAccountMethod]=useState('orange_money')
@@ -26,6 +27,31 @@ function PaymentContent(){
  const [payment,setPayment]=useState<any>(null)
  const [status,setStatus]=useState<any>(null)
  const refreshInFlight=useRef(false)
+
+ useEffect(()=>{
+  if(!isGuestCheckout||!result?.order_number||!email.trim())return
+  let active=true
+  let inFlight=false
+  const checkGuestPayment=async()=>{
+   if(inFlight)return
+   inFlight=true
+   try{
+    const response=await fetch('/api/guest-payment-status',{
+     method:'POST',
+     headers:{'Content-Type':'application/json'},
+     body:JSON.stringify({order_number:result.order_number,email:email.trim().toLowerCase()}),
+     cache:'no-store'
+    })
+    const data=await response.json()
+    if(active&&response.ok)setGuestStatus(data)
+   }catch{
+    // The payment remains unchanged; the next scheduled check will retry.
+   }finally{inFlight=false}
+  }
+  void checkGuestPayment()
+  const timer=setInterval(()=>void checkGuestPayment(),90000)
+  return ()=>{active=false;clearInterval(timer)}
+ },[isGuestCheckout,result?.order_number,email])
 
  async function refreshOrder(){
   if(!orderId||refreshInFlight.current)return
@@ -77,7 +103,7 @@ function PaymentContent(){
    checkoutRequestId=crypto.randomUUID()
    sessionStorage.setItem(requestKey,checkoutRequestId)
   }
-  setBusy(true);setMessage('');setResult(null);setGuestCanRestart(false)
+  setBusy(true);setMessage('');setResult(null);setGuestStatus(null);setGuestCanRestart(false)
   try{
    const {data:{session}}=await supabase().auth.getSession()
    const requestHeaders:Record<string,string>={'Content-Type':'application/json'}
@@ -145,7 +171,9 @@ function PaymentContent(){
     {message&&<p className="notice" role="alert" style={{marginTop:14}}>{message}</p>}
     {guestCanRestart&&<button type="button" onClick={()=>{setGuestCanRestart(false);void startGuest()}} style={{marginTop:12}}>Créer une nouvelle tentative de paiement</button>}
    </section>
-   {result&&<section className="card" style={{marginTop:20}}><h2>Commande préparée</h2><p>Référence : <strong>{result.order_number}</strong></p><p>Montant : <strong>{Number(result.amount).toLocaleString('fr-FR')} {result.currency}</strong></p><p>Un e-mail contenant votre lien de téléchargement sera envoyé après confirmation du paiement.</p></section>}
+   {result&&<section className="card" style={{marginTop:20}}><h2>Commande préparée</h2><p>Référence : <strong>{result.order_number}</strong></p><p>Montant : <strong>{Number(result.amount).toLocaleString('fr-FR')} {result.currency}</strong></p><p>Le paiement est vérifié automatiquement. Ne relancez pas une deuxième demande pendant qu'il est en cours.</p>
+    {guestStatus?.payment_status==='confirmed'?<p className="notice" role="status" style={{marginTop:14}}>✓ Paiement confirmé. {guestStatus.email_sent?'Votre lien de téléchargement a été envoyé par e-mail.':'La livraison par e-mail est en cours de vérification.'}</p>:guestStatus?.payment_status==='failed'||guestStatus?.payment_status==='expired'||guestStatus?.payment_status==='cancelled'?<p className="notice" role="status" style={{marginTop:14}}>Le prestataire a signalé un échec ou une annulation. Pour éviter un double débit en cas de confirmation tardive, la commande reste surveillée automatiquement.</p>:<p className="muted" role="status" style={{marginTop:14}}>État du paiement : {guestStatus?.gateway_status||guestStatus?.payment_status||'vérification en cours'}.</p>}
+   </section>}
    <p style={{marginTop:24}}><Link href="/boutique">← Retour à la boutique</Link></p>
   </main>
  }
