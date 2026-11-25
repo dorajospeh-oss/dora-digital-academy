@@ -116,7 +116,6 @@ Deno.serve(async (req: Request) => {
   let amount = 0;
   let currency = "XAF";
   let previousProviderResponse: Record<string, unknown> = {};
-  let isExistingCheckout = false;
 
   const ensureGuestToken = async (orderId: string, downloadLimit: number) => {
     const { data: tokenRow, error: tokenLookupError } = await admin
@@ -164,7 +163,6 @@ Deno.serve(async (req: Request) => {
   }
 
   if (foundOrder) {
-    isExistingCheckout = true;
     if ((foundOrder.user_id ?? null) !== userId
       || String(foundOrder.buyer_email ?? "").toLowerCase() !== buyerEmail
       || String(foundOrder.buyer_phone ?? "") !== normalizedPhone) {
@@ -400,7 +398,6 @@ Deno.serve(async (req: Request) => {
         merchant_reference: internalReference,
         callback_url: CALLBACK_URL,
         expires_in: 60,
-        customer_email: buyerEmail,
         metadata: {
           order_id: order.id,
           payment_id: payment.id,
