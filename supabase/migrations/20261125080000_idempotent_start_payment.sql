@@ -46,8 +46,22 @@ BEGIN
     RAISE EXCEPTION 'Commande non payable';
   END IF;
 
-  -- A failed/cancelled attempt may be retried with a new payment reference.
+  -- PayCentral can confirm a failed/expired transaction late (up to 24 hours).
+  -- Do not create a second charge while that confirmation window is open.
   IF v_order.status IN ('failed', 'cancelled') THEN
+    SELECT *
+    INTO v_payment
+    FROM public.payments
+    WHERE order_id = v_order.id
+      AND status IN ('failed', 'expired')
+    ORDER BY created_at DESC
+    LIMIT 1
+    FOR UPDATE;
+
+    IF FOUND AND v_payment.created_at > now() - interval '24 hours' THEN
+      RAISE EXCEPTION 'Le paiement précédent peut encore être confirmé. Vérifiez son état avant une nouvelle tentative.';
+    END IF;
+
     UPDATE public.orders
     SET status = 'pending',
         updated_at = now()
