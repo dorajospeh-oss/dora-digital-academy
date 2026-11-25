@@ -43,7 +43,16 @@ Deno.serve(async (req: Request) => {
   }
   if (!GUEST_TOKEN_ENCRYPTION_KEY) return json({ error: "Clé de chiffrement des accès invités absente." }, 503, origin);
   if (!PAYCENTRAL_API_KEY) {
-    return json({ error: "Clé de paiement sandbox manquante dans Supabase." }, 503, origin);
+    return json({ error: "Clé PayCentral absente dans Supabase." }, 503, origin);
+  }
+  const payCentralEnvironment = PAYCENTRAL_API_KEY.startsWith("sk_sandbox_")
+    ? "sandbox"
+    : PAYCENTRAL_API_KEY.startsWith("sk_live_") ? "live" : "unknown";
+  if (payCentralEnvironment === "unknown") {
+    return json({ error: "Format de clé PayCentral non reconnu." }, 503, origin);
+  }
+  if (payCentralEnvironment === "live" && Deno.env.get("PAYCENTRAL_ALLOW_LIVE") !== "true") {
+    return json({ error: "Les encaissements réels sont verrouillés. Activez le mode live uniquement après validation complète." }, 503, origin);
   }
   if (!PAYCENTRAL_WEBHOOK_SECRET) {
     return json({ error: "Secret webhook PayCentral manquant. Aucun paiement n'a été créé." }, 503, origin);
