@@ -31,8 +31,10 @@ BEGIN
     RAISE EXCEPTION 'Authentification requise';
   END IF;
 
-  IF v_provider NOT IN ('orange_money', 'airtel_money', 'moov_money') THEN
-    RAISE EXCEPTION 'Prestataire PayCentral non supporté';
+  -- Preserve legacy card values for the currently published frontend until
+  -- the coordinated UI release replaces those choices with Mobile Money.
+  IF v_provider NOT IN ('orange_money', 'airtel_money', 'moov_money', 'visa', 'mastercard') THEN
+    RAISE EXCEPTION 'Prestataire non supporté';
   END IF;
 
   IF v_method <> v_provider THEN
@@ -82,7 +84,7 @@ BEGIN
   FROM public.payments
   WHERE order_id = v_order.id
     AND status = 'pending'
-    AND provider IN ('orange_money', 'airtel_money', 'moov_money')
+    AND provider IN ('orange_money', 'airtel_money', 'moov_money', 'visa', 'mastercard')
   ORDER BY created_at DESC
   LIMIT 1;
 
