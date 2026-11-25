@@ -77,10 +77,17 @@ BEGIN
   LIMIT 1;
 
   IF FOUND THEN
-    IF v_payment.provider <> v_provider THEN
+    IF v_payment.provider = v_provider THEN
+      RETURN v_payment;
+    END IF;
+
+    -- The former UI could create a local pending row for Visa/Mastercard,
+    -- but those card methods were never sent to PayCentral. Leave that
+    -- historical row untouched and create a new Mobile Money attempt.
+    IF v_payment.provider NOT IN ('visa', 'mastercard')
+       OR v_payment.provider_response IS NOT NULL THEN
       RAISE EXCEPTION 'Un paiement est déjà en cours avec un autre opérateur';
     END IF;
-    RETURN v_payment;
   END IF;
 
   v_ref := 'DDA-PAY-' || upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 16));
