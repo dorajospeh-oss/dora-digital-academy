@@ -87,20 +87,24 @@ BEGIN
       RETURN v_payment;
     END IF;
 
-    -- Legacy start_payment rows had no provider response and never reached
-    -- PayCentral, so their operator can safely be updated before initiation.
-    IF v_payment.provider_response IS NULL AND v_payment.provider <> v_provider THEN
-      UPDATE public.payments
-      SET provider = v_provider,
-          payment_method = v_method,
-          user_id = v_user,
-          amount = v_order.total_amount,
-          currency = v_order.currency,
-          updated_at = now()
-      WHERE id = v_payment.id
-      RETURNING * INTO v_payment;
-    ELSIF v_payment.provider <> v_provider THEN
-      RAISE EXCEPTION 'Un paiement est déjà en cours avec un autre opérateur';
+    -- Keep the operator fixed once an attempt exists. Only legacy card rows
+    -- from the former non-connected UI are safe to convert: that UI never
+    -- transmitted those methods to a gateway.
+    IF v_payment.provider <> v_provider THEN
+      IF v_payment.provider_response IS NULL
+         AND v_payment.provider IN ('visa', 'mastercard') THEN
+        UPDATE public.payments
+        SET provider = v_provider,
+            payment_method = v_method,
+            user_id = v_user,
+            amount = v_order.total_amount,
+            currency = v_order.currency,
+            updated_at = now()
+        WHERE id = v_payment.id
+        RETURNING * INTO v_payment;
+      ELSE
+        RAISE EXCEPTION 'Un paiement est déjà en cours avec un autre opérateur';
+      END IF;
     END IF;
 
     RETURN v_payment;
