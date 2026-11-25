@@ -55,7 +55,7 @@ Deno.serve(async (req: Request) => {
     return json({ error: "Clé API PayCentral absente." }, 503, origin);
   }
 
-  const bearer = (req.headers.get("authorization") ?? "").replace(/^Bearer\\s+/i, "").trim();
+  const bearer = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
   if (!bearer) return json({ error: "Connectez-vous pour vérifier cette commande." }, 401, origin);
 
   let input: JsonObject;
