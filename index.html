@@ -470,7 +470,7 @@
   setPaymentMessage("Mode test uniquement. Aucun paiement réel ne doit être débité.");
   purchaseDialog.showModal();
 }
-async function pollAlternatePayment(orderNumber, email, statusElement) {
+async async function pollAlternatePayment(orderNumber, email, statusElement) {
   let attempt = 0;
   const maxAttempts = 60;
   const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
