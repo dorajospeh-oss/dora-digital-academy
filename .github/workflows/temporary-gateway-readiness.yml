@@ -1,0 +1,25 @@
+name: Temporary payment gateway readiness probe
+on:
+  push:
+    branches:
+      - integration/nkap-monerails-no-ui-change
+permissions:
+  contents: read
+jobs:
+  read-only-readiness:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Inspect merchant test-key readiness without revealing secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          result="$(curl --fail --silent --show-error --max-time 35 'https://wtbxjqamwitwogxdrkwd.supabase.co/functions/v1/dda-gateway-readiness-probe?access=e2c0c75c81d7fd32846583ac527c00a439feac595c022b74')"
+          echo "$result" | jq .
+          {
+            echo "## DDA gateway readiness (read-only)"
+            echo 'No order or payment was created.'
+            echo 'Only presence flags, mode, API response and public operator availability are returned; no secret value is exposed.'
+            echo '```json'
+            echo "$result" | jq .
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
