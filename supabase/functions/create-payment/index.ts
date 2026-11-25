@@ -388,6 +388,7 @@ Deno.serve(async (req: Request) => {
       headers: {
         "X-Api-Key": PAYCENTRAL_API_KEY,
         "Content-Type": "application/json",
+        "Accept": "application/json",
         "Idempotency-Key": internalReference
       },
       body: JSON.stringify({
@@ -395,11 +396,18 @@ Deno.serve(async (req: Request) => {
         currency,
         phone: normalizedPhone,
         provider,
-        description: "DORA DIGITAL ACADEMY — " + String(product.title).slice(0, 90),
+        description: "DORA DIGITAL ACADEMY — " + String(product.title ?? "Produit numérique").slice(0, 90),
         merchant_reference: internalReference,
         callback_url: CALLBACK_URL,
-        success_url: "https://dora-digital-academy-1mvr.vercel.app/?paiement=retour",
-        cancel_url: "https://dora-digital-academy-1mvr.vercel.app/?paiement=annule"
+        expires_in: 60,
+        customer_email: buyerEmail,
+        metadata: {
+          order_id: order.id,
+          payment_id: payment.id,
+          user_id: userId,
+          source: "dda_guest_or_direct_checkout",
+          checkout_request_id: checkoutRequestId
+        }
       }),
       signal: AbortSignal.timeout(20000)
     });
