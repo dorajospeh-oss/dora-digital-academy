@@ -94,6 +94,20 @@ Ces numéros sont réservés au bac à sable : les transactions de test n'atteig
 - Ne jamais activer les clés live ou les variables `*_ALLOW_LIVE` sans validation commerciale du compte marchand, des opérateurs et des webhooks de production.
 - Les anciennes passerelles PayCentral restent présentes dans la page et dans le backend ; cette intégration ne les supprime pas.
 
+## Résultat du contrôle préalable (25 novembre 2026)
+
+Un contrôle en lecture seule a été exécuté directement dans l'environnement Supabase. Il ne crée aucune commande ni aucune transaction.
+
+Résultat :
+- Nkap : `NKAP_API_KEY`, `NKAP_API_SECRET` et `NKAP_WEBHOOK_SECRET` absents.
+- Monerails : `MONERAILS_API_KEY` et `MONERAILS_WEBHOOK_SECRET` absents.
+- Les API marchandes n'ont donc pas pu être authentifiées et la liste des opérateurs n'a pas pu être interrogée.
+- Aucun achat ni paiement de test Nkap ou Monerails n'a été créé.
+
+Le endpoint temporaire de diagnostic a été désactivé immédiatement après le contrôle (version 2 renvoyant HTTP 410). Le workflow temporaire GitHub utilisé pour effectuer le contrôle a été supprimé de la branche.
+
+Cela signifie que les contrôles automatisés de syntaxe et de préservation de l'interface sont réussis, mais que le test réel des paiements Sandbox est BLOQUÉ tant que les cinq secrets de test ci-dessus ne sont pas enregistrés dans Supabase.
+
 ## État de cette branche
 
 Le HTML et les fonctions serveur ont passé la vérification de syntaxe/typage Deno et le contrôle de préservation de l'interface. La Pull Request #2 est en attente. Les nouvelles fonctions ne sont pas encore déployées sur Supabase et les transactions test de bout en bout restent à faire après ajout des secrets.
