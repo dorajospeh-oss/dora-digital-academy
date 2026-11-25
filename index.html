@@ -358,12 +358,16 @@
 
   const providerSelect = document.getElementById("paymentProvider");
   const phoneInput = document.getElementById("paymentPhone");
-  providerSelect.addEventListener("change", function () {
-    // Nkap's hosted checkout in Chad collects the operator and phone itself.
-    // Keep the existing field in place; only its validation changes.
-    phoneInput.required = providerSelect.value !== "nkap";
-  });
-  phoneInput.required = providerSelect.value !== "nkap";
+  const phoneField = phoneInput.closest(".dialog-field");
+  function syncPaymentFields() {
+    // For Chad, Nkap hosts the operator and phone entry; the DDA form should
+    // not ask the customer for those details a second time.
+    const hostedNkap = providerSelect.value === "nkap";
+    phoneInput.required = !hostedNkap;
+    if (phoneField) phoneField.hidden = hostedNkap;
+  }
+  providerSelect.addEventListener("change", syncPaymentFields);
+  syncPaymentFields();
 
   function escapeHtml(value) {
     return String(value == null ? "" : value).replace(/[&<>"']/g, function (ch) {
