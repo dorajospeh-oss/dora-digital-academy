@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
   if (!url || !key) {
     return NextResponse.json({ error: 'Configuration du paiement indisponible.' }, { status: 503 })
   }
-  if (!/^Bearer\\s+\\S+$/i.test(authorization)) {
+  if (!/^Bearer\s+\S+$/i.test(authorization)) {
     return NextResponse.json({ error: 'Connectez-vous pour payer cette commande.' }, { status: 401 })
   }
 
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
   if (!['orange_money', 'airtel_money', 'moov_money'].includes(provider)) {
     return NextResponse.json({ error: 'Moyen de paiement non pris en charge.' }, { status: 400 })
   }
-  if (!/^\\+[1-9][0-9]{7,14}$/.test(phone)) {
+  if (!/^\+[1-9][0-9]{7,14}$/.test(phone)) {
     return NextResponse.json({ error: 'Numéro Mobile Money au format international requis.' }, { status: 400 })
   }
 
