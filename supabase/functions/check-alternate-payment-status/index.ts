@@ -70,7 +70,12 @@ async function guestDownloadUrl(admin: any, orderId: string, orderNumber: string
 async function deliverGuestEmail(admin: any, orderId: string) {
   if (!BREVO_API_KEY || !BREVO_SENDER_EMAIL || !GUEST_TOKEN_ENCRYPTION_KEY) return false;
   const { data: claimed, error } = await admin.rpc("claim_guest_order_email", { p_order_id: orderId });
-  if (error || !Array.isArray(claimed) || !claimed.length) return false;
+  if (error) return false;
+  if (!Array.isArray(claimed) || !claimed.length) {
+    const { data: token } = await admin.from("guest_order_tokens")
+      .select("email_sent_at").eq("order_id", orderId).is("revoked_at", null).limit(1).maybeSingle();
+    return Boolean(token?.email_sent_at);
+  }
   const item = object(claimed[0]);
   try {
     const keyBytes = Uint8Array.from(atob(GUEST_TOKEN_ENCRYPTION_KEY), c => c.charCodeAt(0));
@@ -287,10 +292,7 @@ Deno.serve(async (req: Request) => {
   const latestPaymentStatus = String(latestPayment?.status ?? payment.status);
   const latestOrderStatus = String(latestOrder?.status ?? order.status);
 
-  if (confirmed) {
-    await admin.rpc("notify_payment_confirmed", { p_order_id: order.id });
-    await deliverGuestEmail(admin, String(order.id));
-  }
+  const emailSent = confirmed ? await deliverGuestEmail(admin, String(order.id)) : false;
   const url = confirmed ? await guestDownloadUrl(admin, String(order.id), String(order.order_number)) : null;
 
   return json({
@@ -300,7 +302,7 @@ Deno.serve(async (req: Request) => {
     payment_status: latestPaymentStatus,
     gateway_status: gatewayStatus,
     download_url: url,
-    email_sent: Boolean(url && false),
+    email_sent: emailSent,
     message: confirmed
       ? url ? "Paiement confirmé. Votre lien de téléchargement est prêt." : "Paiement confirmé. Votre achat est disponible dans votre compte."
       : finalFailure ? "La passerelle a signalé un échec de paiement." : "En attente de confirmation sur votre téléphone."
