@@ -289,7 +289,6 @@ Deno.serve(async (req: Request) => {
         merchant_reference: merchantReference,
         callback_url: CALLBACK_URL,
         expires_in: 60,
-        customer_email: buyerEmail || undefined,
         metadata: {
           order_id: orderId,
           payment_id: payment.id,
