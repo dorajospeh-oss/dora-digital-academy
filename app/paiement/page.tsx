@@ -57,7 +57,7 @@ function PaymentContent(){
  useEffect(()=>{
   if(!orderId)return
   void refreshOrder()
-  const timer=setInterval(()=>void refreshOrder(),15000)
+  const timer=setInterval(()=>void refreshOrder(),60000)
   return ()=>clearInterval(timer)
  },[orderId])
 
