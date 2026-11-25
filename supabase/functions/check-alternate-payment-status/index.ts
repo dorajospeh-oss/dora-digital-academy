@@ -242,8 +242,11 @@ Deno.serve(async (req: Request) => {
     eventId = "monerails-poll:" + gatewayReference + ":" + gatewayStatus + ":" + String(data.updated_at ?? "");
   }
 
+  const expectedGatewayAmount = payment.provider === "nkap"
+    ? Number(stored.gateway_amount ?? payment.amount)
+    : Number(payment.amount);
   if (returnedMerchantReference !== String(payment.transaction_reference)
-    || !Number.isFinite(gatewayAmount) || gatewayAmount !== Number(payment.amount)
+    || !Number.isFinite(gatewayAmount) || gatewayAmount !== expectedGatewayAmount
     || gatewayCurrency !== String(payment.currency).toUpperCase()) {
     return json({ error: "Montant, devise ou référence marchand non conforme. Aucun accès ne sera délivré." }, 409, origin);
   }
