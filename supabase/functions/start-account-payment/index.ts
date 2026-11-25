@@ -157,8 +157,8 @@ Deno.serve(async (req: Request) => {
     console.error("Account order lookup failed:", orderError?.message ?? "order not found");
     return json({ error: "Commande introuvable pour ce compte." }, 404, origin);
   }
-  if (order.status !== "pending") {
-    return json({ error: "Cette commande n'est pas en attente de paiement." }, 409, origin);
+  if (!["pending", "failed", "cancelled"].includes(String(order.status))) {
+    return json({ error: "Cette commande n'est pas payable." }, 409, origin);
   }
 
   const amount = Number(order.total_amount);
