@@ -69,7 +69,9 @@ function PaymentContent(){
   const lastDot=cleanEmail.lastIndexOf('.')
   if(!cleanEmail||cleanEmail.includes(' ')||atPosition<=0||lastDot<=atPosition+1||lastDot===cleanEmail.length-1)return setMessage('Veuillez saisir une adresse e-mail valide pour recevoir votre eBook.')
   if(!phone.trim())return setMessage('Veuillez saisir le numéro associé à votre compte Mobile Money.')
-  const requestKey='dda_guest_checkout_'+[productId,method,cleanEmail.toLowerCase(),phone.trim()].map(encodeURIComponent).join('_')
+  const contactDigest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode([method,cleanEmail.toLowerCase(),phone.trim()].join('|')))
+  const contactHash=[...new Uint8Array(contactDigest)].map(b=>b.toString(16).padStart(2,'0')).join('')
+  const requestKey='dda_guest_checkout_'+productId+'_'+contactHash
   let checkoutRequestId=sessionStorage.getItem(requestKey)
   if(!checkoutRequestId){
    checkoutRequestId=crypto.randomUUID()
