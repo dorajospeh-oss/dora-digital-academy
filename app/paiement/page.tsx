@@ -4,8 +4,8 @@ import {useSearchParams} from 'next/navigation'
 import Link from 'next/link'
 import {supabase} from '../../lib/supabase'
 
-const guestMethods=[['orange','Orange Money'],['airtel','Airtel Money']] as const
-const accountMethods=[['orange_money','Orange Money'],['airtel_money','Airtel Money'],['moov_money','Moov Money'],['visa','Visa'],['mastercard','Mastercard']] as const
+const guestMethods=[['orange','Orange Money'],['airtel','Airtel Money'],['moov','Moov Money']] as const
+const accountMethods=[['orange_money','Orange Money'],['airtel_money','Airtel Money'],['moov_money','Moov Money']] as const
 
 function PaymentContent(){
  const params=useSearchParams()
@@ -13,7 +13,7 @@ function PaymentContent(){
  const orderId=params.get('order')
  const isGuestCheckout=Boolean(productId)&&!orderId
 
- const [method,setMethod]=useState<'orange'|'airtel'>('orange')
+ const [method,setMethod]=useState<'orange'|'airtel'|'moov'>('orange')
  const [email,setEmail]=useState('')
  const [phone,setPhone]=useState('')
  const [busy,setBusy]=useState(false)
@@ -21,6 +21,7 @@ function PaymentContent(){
  const [result,setResult]=useState<any>(null)
 
  const [accountMethod,setAccountMethod]=useState('orange_money')
+ const [accountPhone,setAccountPhone]=useState('')
  const [payment,setPayment]=useState<any>(null)
  const [status,setStatus]=useState<any>(null)
 
@@ -62,14 +63,25 @@ function PaymentContent(){
 
  async function startAccountPayment(){
   if(!orderId)return setMessage('Commande introuvable.')
-  setBusy(true);setMessage('')
+  const normalizedPhone=accountPhone.trim().replace(/[\\s().-]/g,'')
+  if(!/^\\+[1-9][0-9]{7,14}$/.test(normalizedPhone))return setMessage('Saisissez un numéro Mobile Money au format international, par exemple +23562123456.')
+  setBusy(true);setMessage('');setPayment(null)
   try{
-   const {data,error}=await supabase().rpc('start_payment',{p_order_id:orderId,p_provider:accountMethod,p_payment_method:accountMethod})
-   if(error)throw error
+   const {data:{session}}=await supabase().auth.getSession()
+   if(!session?.access_token)throw new Error('Votre session a expiré. Reconnectez-vous avec le compte ayant passé cette commande.')
+   const response=await fetch('/api/account-payment',{
+    method:'POST',
+    headers:{'Content-Type':'application/json',Authorization:'Bearer '+session.access_token},
+    body:JSON.stringify({order_id:orderId,provider:accountMethod,phone:normalizedPhone})
+   })
+   const data=await response.json()
+   if(!response.ok)throw new Error(data.error||'Impossible de lancer le paiement.')
    setPayment(data)
    await refreshOrder()
+   setMessage(data.message||'Demande de paiement envoyée. Confirmez-la sur votre téléphone.')
+   if(data.checkout_url)window.location.assign(data.checkout_url)
   }catch(error){
-   setMessage(error instanceof Error?error.message:'Impossible de préparer le paiement.')
+   setMessage(error instanceof Error?error.message:'Une erreur est survenue pendant le paiement.')
   }finally{setBusy(false)}
  }
 
@@ -106,11 +118,15 @@ function PaymentContent(){
    <section className="card" style={{marginTop:24}}>
     <h2>Moyen de paiement</h2>
     <p className="muted">Ce parcours concerne une commande déjà créée dans votre compte. Connectez-vous avec le compte ayant passé la commande pour consulter son état et payer.</p>
+    <label style={{display:'grid',gap:6,marginTop:16}}>Téléphone Mobile Money
+     <input type="tel" value={accountPhone} onChange={e=>setAccountPhone(e.target.value)} autoComplete="tel" placeholder="+23562123456" required/>
+     <small className="muted">Utilisez le numéro du compte Mobile Money qui recevra la demande de confirmation.</small>
+    </label>
     <div style={{display:'grid',gap:12,marginTop:16}}>{accountMethods.map(([v,l])=><label key={v} style={{display:'flex',gap:10,alignItems:'center'}}><input type="radio" name="account-method" checked={accountMethod===v} onChange={()=>setAccountMethod(v)}/>{l}</label>)}</div>
-    <button onClick={startAccountPayment} disabled={busy||!orderId} style={{marginTop:20}}>{busy?'Préparation…':'Préparer le paiement'}</button>
+    <button onClick={startAccountPayment} disabled={busy||!orderId} style={{marginTop:20}}>{busy?'Envoi…':'Lancer le paiement sécurisé'}</button>
     {message&&<p className="notice" role="alert" style={{marginTop:14}}>{message}</p>}
    </section>
-   {payment&&<section className="card" style={{marginTop:20}}><h2>Référence de paiement</h2><p><strong>{payment.transaction_reference}</strong></p><p>La confirmation du paiement est effectuée côté serveur.</p></section>}
+   {payment&&<section className="card" style={{marginTop:20}}><h2>Demande de paiement transmise</h2><p>Commande : <strong>{payment.order_number||status?.order?.order_number||orderId}</strong></p><p>Référence : <strong>{payment.transaction_reference}</strong></p><p>Transaction PayCentral : <strong>{payment.transaction_id||'En cours de confirmation'}</strong></p><p>Statut : <strong>{payment.status||'processing'}</strong></p><p className="muted">Confirmez la demande sur votre téléphone. La confirmation sera vérifiée automatiquement.</p></section>}
    {status?.order&&<section className="card" style={{marginTop:20}}><h2>État de la commande</h2><p>Commande : <strong>{status.order.status}</strong></p><p>Paiement : <strong>{status.payment?.status||'—'}</strong></p>{status.order.status==='paid'?<><p>✓ Paiement confirmé. Vos accès sont disponibles.</p><Link className="btn" href="/compte">Accéder à mon espace</Link></>:<p>En attente de confirmation du prestataire de paiement.</p>}</section>}
    <p style={{marginTop:24}}><Link href="/compte">← Retour à mon compte</Link></p>
   </main>
