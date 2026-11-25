@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
   if (!url || !key) {
     return NextResponse.json({ error: 'Configuration du suivi de paiement indisponible.' }, { status: 503 })
   }
-  if (!/^Bearer\\s+\\S+$/i.test(authorization)) {
+  if (!/^Bearer\s+\S+$/i.test(authorization)) {
     return NextResponse.json({ error: 'Connectez-vous pour vérifier cette commande.' }, { status: 401 })
   }
 
