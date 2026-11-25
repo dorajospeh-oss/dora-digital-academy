@@ -1,3 +1,12 @@
+-- Stable request key for guest checkout. This lets the browser retry after a network
+-- interruption without creating a second order or a second PayCentral transaction.
+ALTER TABLE public.orders
+  ADD COLUMN IF NOT EXISTS checkout_request_id uuid;
+
+CREATE UNIQUE INDEX IF NOT EXISTS orders_checkout_request_id_uidx
+  ON public.orders (checkout_request_id)
+  WHERE checkout_request_id IS NOT NULL;
+
 -- Make connected checkout idempotent per order.
 -- The order row is locked before an attempt is created/reused, so parallel
 -- browser requests cannot create parallel pending payment records for one order.
