@@ -1,5 +1,5 @@
 'use client'
-import {Suspense,useEffect,useState} from 'react'
+import {Suspense,useEffect,useRef,useState} from 'react'
 import {useSearchParams} from 'next/navigation'
 import Link from 'next/link'
 import {supabase} from '../../lib/supabase'
@@ -24,18 +24,40 @@ function PaymentContent(){
  const [accountPhone,setAccountPhone]=useState('')
  const [payment,setPayment]=useState<any>(null)
  const [status,setStatus]=useState<any>(null)
+ const refreshInFlight=useRef(false)
 
  async function refreshOrder(){
-  if(!orderId)return
-  const {data,error}=await supabase().rpc('get_my_order_status',{p_order_id:orderId})
-  if(error)setMessage(error.message)
-  else setStatus(data)
+  if(!orderId||refreshInFlight.current)return
+  refreshInFlight.current=true
+  try{
+   const client=supabase()
+   let {data,error}=await client.rpc('get_my_order_status',{p_order_id:orderId})
+   if(error){setMessage(error.message);return}
+   const paymentStatus=data?.payment?.status
+   const hasGatewayTransaction=Boolean(data?.payment?.provider_response?.transaction_id)
+   if(data?.order?.status!=='paid'&&paymentStatus!=='confirmed'&&hasGatewayTransaction){
+    const {data:{session}}=await client.auth.getSession()
+    if(session?.access_token){
+     await fetch('/api/account-payment-status',{
+      method:'POST',
+      headers:{'Content-Type':'application/json',Authorization:'Bearer '+session.access_token},
+      body:JSON.stringify({order_id:orderId}),
+      cache:'no-store'
+     })
+     const refreshed=await client.rpc('get_my_order_status',{p_order_id:orderId})
+     if(!refreshed.error)data=refreshed.data
+    }
+   }
+   setStatus(data)
+  }finally{
+   refreshInFlight.current=false
+  }
  }
 
  useEffect(()=>{
   if(!orderId)return
-  refreshOrder()
-  const timer=setInterval(refreshOrder,10000)
+  void refreshOrder()
+  const timer=setInterval(()=>void refreshOrder(),15000)
   return ()=>clearInterval(timer)
  },[orderId])
 
@@ -127,7 +149,7 @@ function PaymentContent(){
     {message&&<p className="notice" role="alert" style={{marginTop:14}}>{message}</p>}
    </section>
    {payment&&<section className="card" style={{marginTop:20}}><h2>Demande de paiement transmise</h2><p>Commande : <strong>{payment.order_number||status?.order?.order_number||orderId}</strong></p><p>Référence : <strong>{payment.transaction_reference}</strong></p><p>Transaction PayCentral : <strong>{payment.transaction_id||'En cours de confirmation'}</strong></p><p>Statut : <strong>{payment.status||'processing'}</strong></p><p className="muted">Confirmez la demande sur votre téléphone. La confirmation sera vérifiée automatiquement.</p></section>}
-   {status?.order&&<section className="card" style={{marginTop:20}}><h2>État de la commande</h2><p>Commande : <strong>{status.order.status}</strong></p><p>Paiement : <strong>{status.payment?.status||'—'}</strong></p>{status.order.status==='paid'?<><p>✓ Paiement confirmé. Vos accès sont disponibles.</p><Link className="btn" href="/compte">Accéder à mon espace</Link></>:<p>En attente de confirmation du prestataire de paiement.</p>}</section>}
+   {status?.order&&<section className="card" style={{marginTop:20}}><h2>État de la commande</h2><p>Commande : <strong>{status.order.status}</strong></p><p>Paiement : <strong>{status.payment?.status||'—'}</strong></p>{status.order.status==='paid'?<><p>✓ Paiement confirmé. Vos accès sont disponibles.</p><Link className="btn" href="/compte">Accéder à mon espace</Link></>:status.payment?.status==='failed'?<p>Le prestataire a signalé un échec. La confirmation reste contrôlée automatiquement pendant la période de sécurité avant toute nouvelle tentative.</p>:status.order.status==='cancelled'?<p>La demande a été annulée. L’état du paiement est revérifié pour détecter une éventuelle confirmation tardive.</p>:<p>En attente de confirmation du prestataire. Vérification automatique en cours.</p>}</section>}
    <p style={{marginTop:24}}><Link href="/compte">← Retour à mon compte</Link></p>
   </main>
  }
