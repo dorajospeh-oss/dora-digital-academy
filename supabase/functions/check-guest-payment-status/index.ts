@@ -50,7 +50,7 @@ function providerName(provider: string) {
   return p;
 }
 
-async function deliverGuestEmail(admin: ReturnType<typeof createClient>, orderId: string) {
+async function deliverGuestEmail(admin: any, orderId: string) {
   if (!BREVO_API_KEY || !BREVO_SENDER_EMAIL || !GUEST_TOKEN_ENCRYPTION_KEY) {
     return { sent: false, reason: "delivery_secrets_missing" };
   }
@@ -156,7 +156,7 @@ Deno.serve(async (req: Request) => {
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
     auth: { persistSession: false, autoRefreshToken: false }
-  });
+  }) as any;
 
   const { data: order, error: orderError } = await admin
     .from("orders")
