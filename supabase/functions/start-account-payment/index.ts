@@ -67,6 +67,9 @@ Deno.serve(async (req: Request) => {
   if (!PAYCENTRAL_API_KEY || payCentralEnvironment() === "unknown") {
     return json({ error: "Clé API PayCentral absente ou de format non reconnu." }, 503, origin);
   }
+  if (payCentralEnvironment() === "live" && Deno.env.get("PAYCENTRAL_ALLOW_LIVE") !== "true") {
+    return json({ error: "Les encaissements réels sont verrouillés jusqu'à la validation complète du parcours Sandbox." }, 503, origin);
+  }
   if (!WEBHOOK_SECRET) {
     return json({ error: "Le secret du webhook PayCentral n'est pas configuré." }, 503, origin);
   }
