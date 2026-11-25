@@ -73,6 +73,7 @@ BEGIN
   FROM public.payments
   WHERE order_id = v_order.id
     AND status = 'pending'
+    AND provider IN ('orange_money', 'airtel_money', 'moov_money')
   ORDER BY created_at DESC
   LIMIT 1;
 
