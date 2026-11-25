@@ -52,8 +52,12 @@ Deno.serve(async req=>{
    body=await res.json().catch(()=>({})) as Record<string,unknown>;
  } catch { return reply({error:"Monerails est momentanément indisponible. Réessayez sans relancer un nouvel achat."},502,origin); }
  if(!res.ok) {
-   await admin.from("payments").update({provider_response:{...stored,otp_attempts:attempts+1,last_otp_error:String(obj(body.error).code||"authorization_failed").slice(0,80)}}).eq("id",payment.id);
-   return reply({error:String(obj(body.error).message||body.message||"Code refusé.").slice(0,200),attempts_remaining:Math.max(0,2-attempts)},422,origin);
+   const errorCode=String(obj(body.error).code||"");
+   const invalidCode=response.status===400||response.status===402||errorCode==="otp_invalid";
+   if(invalidCode) {
+     await admin.from("payments").update({provider_response:{...stored,otp_attempts:attempts+1,last_otp_error:errorCode||"otp_invalid"}}).eq("id",payment.id);
+   }
+   return reply({error:String(obj(body.error).message||body.message||"La validation Monerails a échoué.").slice(0,200),attempts_remaining:invalidCode?Math.max(0,2-attempts):3},invalidCode?422:(response.status>=500?502:409),origin);
  }
  const data=obj(body.data||body), next=obj(data.next_action), status=String(data.status||"processing").toLowerCase();
  await admin.from("payments").update({provider_response:{...stored,status,next_action:next,requires_otp:status==="requires_otp",otp_attempts:attempts+1}}).eq("id",payment.id).eq("status","pending");
