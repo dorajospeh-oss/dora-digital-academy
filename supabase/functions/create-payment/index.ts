@@ -108,7 +108,8 @@ Deno.serve(async (req: Request) => {
     auth: { persistSession: false, autoRefreshToken: false }
   });
 
-  const checkoutRequestId = String(input.checkout_request_id ?? "").trim();
+  const suppliedCheckoutRequestId = String(input.checkout_request_id ?? "").trim();
+  const checkoutRequestId = suppliedCheckoutRequestId || crypto.randomUUID();
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(checkoutRequestId)) {
     return json({ error: "Référence de session d'achat invalide." }, 400, origin);
   }
@@ -216,7 +217,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: existingPayment, error: existingPaymentError } = await admin
       .from("payments")
-      .select("id,order_id,transaction_reference,provider,amount,currency,status,provider_response")
+      .select("id,order_id,transaction_reference,provider,amount,currency,status,provider_response,created_at")
       .eq("order_id", foundOrder.id)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -239,10 +240,28 @@ Deno.serve(async (req: Request) => {
         message: "Votre paiement est déjà confirmé. Consultez votre e-mail pour télécharger le produit."
       }, 200, origin);
     }
+    if (["failed", "expired"].includes(String(existingPayment.status))) {
+      const previousResponse = existingPayment.provider_response && typeof existingPayment.provider_response === "object"
+        ? existingPayment.provider_response as Record<string, unknown>
+        : {};
+      const hasGatewayTransaction = Boolean(String(previousResponse.transaction_id ?? "").trim());
+      const withinLateConfirmationWindow = Date.now() - new Date(String(existingPayment.created_at)).getTime() < 25 * 60 * 60 * 1000;
+      if (hasGatewayTransaction && withinLateConfirmationWindow) {
+        return json({
+          error: "Le prestataire peut encore confirmer tardivement ce paiement. Pour éviter tout double débit, une nouvelle tentative sera possible après la fenêtre de sécurité de 25 heures.",
+          new_checkout_required: false,
+          retry_after_seconds: Math.max(60, Math.ceil((25 * 60 * 60 * 1000 - (Date.now() - new Date(String(existingPayment.created_at)).getTime())) / 1000))
+        }, 409, origin);
+      }
+      return json({
+        error: "La tentative précédente est clôturée. Vous pouvez démarrer une nouvelle session de paiement.",
+        new_checkout_required: true
+      }, 409, origin);
+    }
     if (existingPayment.status !== "pending") {
       return json({
-        error: "La tentative précédente a été refusée ou clôturée. Vous pouvez démarrer une nouvelle session de paiement.",
-        new_checkout_required: true
+        error: "La tentative précédente n'est pas payable. Consultez son statut avant de créer une nouvelle commande.",
+        new_checkout_required: false
       }, 409, origin);
     }
 
@@ -405,7 +424,6 @@ Deno.serve(async (req: Request) => {
         provider,
         description: "DORA DIGITAL ACADEMY — " + String(product.title ?? "Produit numérique").slice(0, 90),
         merchant_reference: internalReference,
-        callback_url: CALLBACK_URL,
         expires_in: 60,
         metadata: {
           order_id: order.id,
